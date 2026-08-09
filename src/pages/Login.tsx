@@ -21,7 +21,8 @@ export default function Login() {
     });
 
     if (error) {
-      setError('Email atau password salah.');
+      console.error(error);
+      setError(error.message || 'Terjadi kesalahan saat login.');
     } else {
       navigate('/');
     }
