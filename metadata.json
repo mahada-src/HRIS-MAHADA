@@ -1,0 +1,8 @@
+{
+  "name": "HRIS MAHADA",
+  "description": "Sistem Informasi Manajemen Sumber Daya Manusia (HRIS) untuk MAHADA.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

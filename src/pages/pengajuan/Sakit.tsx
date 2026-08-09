@@ -1,0 +1,234 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/Table';
+import { supabase } from '../../lib/supabase';
+import { Employee } from '../../types';
+import { useAuth } from '../../lib/AuthContext';
+import { Plus, X, Check, XCircle } from 'lucide-react';
+
+export default function PengajuanSakit() {
+  const [data, setData] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  
+  // Form State
+  const [employeeId, setEmployeeId] = useState('');
+  const { employee: currentEmployee } = useAuth();
+  const isAdmin = currentEmployee?.role === 'HR' || currentEmployee?.role === 'Super Admin';
+
+  useEffect(() => {
+    if (currentEmployee && !isAdmin) {
+      setEmployeeId(currentEmployee.id);
+    }
+  }, [currentEmployee, isAdmin]);
+  const [start_date, setStart_date] = useState('');
+  const [end_date, setEnd_date] = useState('');
+  const [reason, setReason] = useState('');
+  const [medical_certificate_url, setMedical_certificate_url] = useState('');
+
+  useEffect(() => {
+    fetchData();
+    fetchEmployees();
+  }, []);
+
+  const fetchEmployees = async () => {
+    const { data } = await supabase.from('employees').select('id, full_name, employee_code').order('full_name');
+    if (data) setEmployees(data);
+  };
+
+  const fetchData = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('sick_requests')
+      .select('*, employees(full_name, employee_code)')
+      .order('created_at', { ascending: false });
+      
+    if (data) setData(data);
+    setLoading(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!employeeId) return alert('Pilih karyawan');
+    
+    const { error } = await supabase.from('sick_requests').insert([{
+      employee_id: employeeId,
+      status: 'Menunggu Persetujuan',
+      start_date,
+      end_date,
+      reason,
+      medical_certificate_url
+    }]);
+
+    if (!error) {
+      setShowForm(false);
+      setEmployeeId('');
+      setStart_date('');
+      setEnd_date('');
+      setReason('');
+      setMedical_certificate_url('');
+      fetchData();
+    } else {
+      alert('Gagal menyimpan data');
+      console.error(error);
+    }
+  };
+
+  const handleUpdateStatus = async (id: string, newStatus: string, empId: string, date: string) => {
+    const { error } = await supabase.from('sick_requests').update({ status: newStatus }).eq('id', id);
+    if (!error) {
+      // Jika disetujui, update attendance
+      if (newStatus === 'Disetujui') {
+        const check = await supabase.from('attendance').select('id').eq('employee_id', empId).eq('date', date).single();
+        if (check.data) {
+          await supabase.from('attendance').update({ status: 'Sakit', notes: 'Disetujui sistem' }).eq('id', check.data.id);
+        } else {
+          await supabase.from('attendance').insert([{
+            employee_id: empId,
+            date: date,
+            status: 'Sakit',
+            notes: 'Disetujui sistem'
+          }]);
+        }
+      }
+      fetchData();
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-slate-800">Pengajuan Sakit</h1>
+          <p className="text-sm text-slate-500">Kelola pengajuan izin sakit dan lampiran surat dokter.</p>
+        </div>
+        <Button onClick={() => setShowForm(!showForm)}>
+          {showForm ? <><X className="w-4 h-4 mr-2" /> Batal</> : <><Plus className="w-4 h-4 mr-2" /> Tambah Pengajuan</>}
+        </Button>
+      </div>
+
+      {showForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Form Pengajuan Sakit</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Karyawan</label>
+                {isAdmin ? (
+                  <select 
+                    required
+                    value={employeeId} 
+                    onChange={e => setEmployeeId(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  >
+                    <option value="">-- Pilih Karyawan --</option>
+                    {employees.map(emp => (
+                      <option key={emp.id} value={emp.id}>{emp.employee_code} - {emp.full_name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-600">
+                    {currentEmployee?.full_name} ({currentEmployee?.employee_code})
+                  </div>
+                )}
+              </div>
+              
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Tanggal Mulai</label>
+                <input required type="date" value={start_date} onChange={e => setStart_date(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Tanggal Selesai</label>
+                <input required type="date" value={end_date} onChange={e => setEnd_date(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Alasan / Gejala</label>
+                <textarea required rows={3} value={reason} onChange={e => setReason(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"></textarea>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Lampiran URL</label>
+                <input required type="text" value={medical_certificate_url} onChange={e => setMedical_certificate_url(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
+              </div>
+              
+
+              <Button type="submit" className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white">Kirim Pengajuan</Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>No. Ref</TableHead>
+                <TableHead>Karyawan</TableHead>
+                <TableHead>Mulai</TableHead>
+                <TableHead>Selesai</TableHead>
+                <TableHead>Alasan</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
+              ) : data.length === 0 ? (
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">Belum ada pengajuan.</TableCell></TableRow>
+              ) : (
+                data.map(item => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-mono text-xs">REQ-{item.id.substring(0,6).toUpperCase()}</TableCell>
+                    <TableCell>
+                      <div className="font-medium text-slate-800">{item.employees?.full_name}</div>
+                      <div className="text-xs text-slate-500">{item.employees?.employee_code}</div>
+                    </TableCell>
+                    
+                    <TableCell>
+                      {new Date(item.start_date).toLocaleDateString('id-ID')}
+                    </TableCell>
+                    
+                    <TableCell>
+                      {new Date(item.end_date).toLocaleDateString('id-ID')}
+                    </TableCell>
+                    
+                    <TableCell>
+                      {item.reason}
+                    </TableCell>
+                    
+                    <TableCell>
+                      <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                        item.status === 'Disetujui' ? 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10' :
+                        item.status === 'Ditolak' ? 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/10' :
+                        'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/10'
+                      }`}>
+                        {item.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {item.status === 'Menunggu Persetujuan' && (isAdmin || currentEmployee?.role === 'Manager') && (
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="outline" className="text-emerald-600 hover:text-emerald-700 border-emerald-200" onClick={() => handleUpdateStatus(item.id, 'Disetujui', item.employee_id, item.start_date)}><Check className="w-4 h-4" /></Button>
+                          <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 border-red-200" onClick={() => handleUpdateStatus(item.id, 'Ditolak', item.employee_id, item.start_date)}><XCircle className="w-4 h-4" /></Button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
