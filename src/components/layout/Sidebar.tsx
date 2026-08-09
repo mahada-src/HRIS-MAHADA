@@ -18,6 +18,7 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  Shield,
 } from 'lucide-react';
 
 const navigation = [
@@ -43,6 +44,7 @@ const navigation = [
   },
   { name: 'Pengaturan', href: '/pengaturan', icon: Settings },
   { name: 'Administrasi', href: '/administrasi', icon: FolderOpen },
+  { name: 'Manajemen User', href: '/manajemen-user', icon: Shield },
 ];
 
 interface SidebarProps {

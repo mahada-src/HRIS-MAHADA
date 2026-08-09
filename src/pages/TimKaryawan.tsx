@@ -1,22 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Download, Upload, Search, Edit2, Trash2, Eye } from 'lucide-react';
+import { UserPlus, Download, Upload, Search, Edit2, Trash2, Eye, X } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
-import { Badge } from '../components/ui/Badge';
 import { supabase } from '../lib/supabase';
-import { Employee } from '../types';
+import { Employee, Department, Position } from '../types';
 import { useNavigate } from 'react-router-dom';
 
 export default function TimKaryawan() {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('Semua');
   const navigate = useNavigate();
 
+  // Modal State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newEmp, setNewEmp] = useState({ full_name: '', employee_code: '', email: '', department_id: '', position_id: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     fetchEmployees();
+    fetchDepsAndPos();
   }, []);
 
   const fetchEmployees = async () => {
@@ -30,22 +37,59 @@ export default function TimKaryawan() {
       `)
       .order('full_name', { ascending: true });
     
-    if (error) {
-      console.error('Error fetching employees:', error);
-    } else {
-      setEmployees(data || []);
-    }
+    if (error) console.error('Error fetching employees:', error);
+    else setEmployees(data || []);
     setLoading(false);
+  };
+
+  const fetchDepsAndPos = async () => {
+    const [depRes, posRes] = await Promise.all([
+      supabase.from('departments').select('*'),
+      supabase.from('positions').select('*')
+    ]);
+    if (depRes.data) setDepartments(depRes.data);
+    if (posRes.data) setPositions(posRes.data);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Yakin ingin menghapus data karyawan ini?')) return;
+    const { error } = await supabase.from('employees').delete().eq('id', id);
+    if (error) alert('Gagal menghapus: ' + error.message);
+    else fetchEmployees();
+  };
+
+  const handleAddEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    // Generate NIK if empty
+    const code = newEmp.employee_code.trim() || `EMP-${Date.now()}`;
+    
+    const { error } = await supabase.from('employees').insert([{
+      full_name: newEmp.full_name,
+      employee_code: code,
+      email: newEmp.email || null,
+      department_id: newEmp.department_id || null,
+      position_id: newEmp.position_id || null,
+      employment_status: 'Tetap'
+    }]);
+
+    setIsSubmitting(false);
+    if (error) {
+      alert('Gagal menambahkan karyawan: ' + error.message);
+    } else {
+      setIsAddModalOpen(false);
+      setNewEmp({ full_name: '', employee_code: '', email: '', department_id: '', position_id: '' });
+      fetchEmployees();
+    }
   };
 
   const filteredEmployees = employees.filter(emp => {
     const matchSearch = emp.full_name.toLowerCase().includes(search.toLowerCase()) || 
                         emp.employee_code.toLowerCase().includes(search.toLowerCase());
-    
     const matchStatus = filterStatus === 'Semua' || 
                        (filterStatus === 'Aktif' && emp.employment_status !== 'Resign') ||
                        (filterStatus === 'Resign' && emp.employment_status === 'Resign');
-                       
     return matchSearch && matchStatus;
   });
 
@@ -57,15 +101,15 @@ export default function TimKaryawan() {
           <p className="text-sm text-slate-500">Kelola data seluruh karyawan perusahaan Anda.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => alert('Fitur Import belum tersedia.')}>
             <Upload className="mr-2 h-4 w-4" />
             Import
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => alert('Fitur Export belum tersedia.')}>
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setIsAddModalOpen(true)}>
             <UserPlus className="mr-2 h-4 w-4" />
             Tambah Karyawan
           </Button>
@@ -147,7 +191,6 @@ export default function TimKaryawan() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {/* @ts-ignore */}
                       <span className="inline-flex items-center rounded-md bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/10">
                         {/* @ts-ignore */}
                         {karyawan.departments?.name || '-'}
@@ -164,13 +207,13 @@ export default function TimKaryawan() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => navigate('/detail?id=' + karyawan.id)}>
+                        <Button variant="ghost" size="sm" onClick={() => navigate('/detail?id=' + karyawan.id)} title="Lihat Detail">
                           <Eye className="h-4 w-4 text-emerald-600" />
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => alert('Fitur Edit belum tersedia.')} title="Edit">
                           <Edit2 className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(karyawan.id)} title="Hapus">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -181,17 +224,56 @@ export default function TimKaryawan() {
             </TableBody>
           </Table>
           </div>
-          <div className="flex items-center justify-between border-t border-slate-100 bg-white p-4">
-            <p className="text-sm text-slate-500">
-              Menampilkan <span className="font-medium text-slate-900">{filteredEmployees.length}</span> data
-            </p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled>Sebelumnya</Button>
-              <Button variant="outline" size="sm" disabled>Selanjutnya</Button>
-            </div>
-          </div>
         </CardContent>
       </Card>
+
+      {/* Modal Tambah Karyawan */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100">
+              <h3 className="font-bold text-slate-800">Tambah Karyawan Baru</h3>
+              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleAddEmployee} className="p-4 space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700">Nama Lengkap <span className="text-red-500">*</span></label>
+                <input required type="text" value={newEmp.full_name} onChange={e => setNewEmp({...newEmp, full_name: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm" placeholder="Contoh: Budi Santoso" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700">NIK (Opsional)</label>
+                <input type="text" value={newEmp.employee_code} onChange={e => setNewEmp({...newEmp, employee_code: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm" placeholder="Dikosongkan akan generate otomatis" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700">Email</label>
+                <input type="email" value={newEmp.email} onChange={e => setNewEmp({...newEmp, email: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm" placeholder="budi@contoh.com" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700">Departemen</label>
+                <select value={newEmp.department_id} onChange={e => setNewEmp({...newEmp, department_id: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm">
+                  <option value="">-- Pilih Departemen --</option>
+                  {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700">Jabatan</label>
+                <select value={newEmp.position_id} onChange={e => setNewEmp({...newEmp, position_id: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm">
+                  <option value="">-- Pilih Jabatan --</option>
+                  {positions.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                </select>
+              </div>
+              <div className="pt-4 flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>Batal</Button>
+                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={isSubmitting}>
+                  {isSubmitting ? 'Menyimpan...' : 'Simpan Karyawan'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

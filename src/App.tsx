@@ -28,6 +28,7 @@ import IkatanDinas from './pages/IkatanDinas';
 import Pelanggaran from './pages/Pelanggaran';
 import Pengaturan from './pages/Pengaturan';
 import Administrasi from './pages/Administrasi';
+import ManajemenUser from './pages/ManajemenUser';
 
 // Pengajuan pages
 import PengajuanSakit from './pages/pengajuan/Sakit';
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="pelanggaran" element={<ProtectedRoute allowedRoles={['Super Admin', 'HR']}><Pelanggaran /></ProtectedRoute>} />
           <Route path="pengaturan" element={<ProtectedRoute allowedRoles={['Super Admin', 'HR']}><Pengaturan /></ProtectedRoute>} />
           <Route path="administrasi" element={<ProtectedRoute allowedRoles={['Super Admin', 'HR']}><Administrasi /></ProtectedRoute>} />
+          <Route path="manajemen-user" element={<ProtectedRoute allowedRoles={['Super Admin', 'HR']}><ManajemenUser /></ProtectedRoute>} />
           
           <Route path="pengajuan">
             <Route path="sakit" element={<PengajuanSakit />} />
