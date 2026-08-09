@@ -54,7 +54,7 @@ interface SidebarProps {
 
 export default function Sidebar({ open, setOpen }: SidebarProps) {
   const location = useLocation();
-  const { employee } = useAuth();
+  const { employee, signOut } = useAuth();
   const role = employee?.role || 'Karyawan';
 
   const filteredNavigation = navigation.filter(item => {
@@ -172,7 +172,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
       </nav>
 
       <div className="px-2 mt-4">
-        <button onClick={() => supabase.auth.signOut()} className="flex w-full items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+        <button onClick={() => signOut()} className="flex w-full items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
           <LogOut className="h-5 w-5 shrink-0" />
           Keluar
         </button>

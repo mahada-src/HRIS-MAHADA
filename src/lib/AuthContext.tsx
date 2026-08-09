@@ -1,80 +1,74 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { Employee } from '../types';
 
 interface AuthContextType {
-  session: Session | null;
-  user: User | null;
+  user: { id: string } | null;
   employee: Employee | null;
   loading: boolean;
+  signIn: (employeeId: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
-  session: null,
   user: null,
   employee: null,
   loading: true,
+  signIn: async () => {},
   signOut: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<{ id: string } | null>(null);
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchEmployee(session.user.id, session.user.email);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchEmployee(session.user.id, session.user.email);
-      } else {
-        setEmployee(null);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    // Cek apakah ada sesi tersimpan di localStorage
+    const savedUserId = localStorage.getItem('hris_session_user_id');
+    if (savedUserId) {
+      setUser({ id: savedUserId });
+      fetchEmployee(savedUserId);
+    } else {
+      setLoading(false);
+    }
   }, []);
 
-  const fetchEmployee = async (userId: string, currentUserEmail?: string) => {
-    const { data } = await supabase.from('employees').select('*, departments(name), positions(title)').eq('user_id', userId).single();
+  const fetchEmployee = async (employeeId: string) => {
+    const { data } = await supabase
+      .from('employees')
+      .select('*, departments(name), positions(title)')
+      .eq('id', employeeId)
+      .single();
     
-    // Bypass sementara agar email ini selalu jadi Super Admin meskipun data di tabel belum sempurna
-    if (currentUserEmail === 'yunusmahada@gmail.com') {
-      setEmployee({ 
-        ...data, 
-        role: 'Super Admin', 
-        full_name: 'Yunus Mahada (Admin)', 
-        email: 'yunusmahada@gmail.com' 
-      });
-    } else {
+    if (data) {
       setEmployee(data);
+    } else {
+      // Jika data tidak ditemukan, hapus sesi
+      localStorage.removeItem('hris_session_user_id');
+      setUser(null);
+      setEmployee(null);
     }
     setLoading(false);
   };
 
+  const signIn = async (employeeId: string) => {
+    localStorage.setItem('hris_session_user_id', employeeId);
+    setUser({ id: employeeId });
+    setLoading(true);
+    await fetchEmployee(employeeId);
+  };
+
   const signOut = async () => {
-    await supabase.auth.signOut();
+    localStorage.removeItem('hris_session_user_id');
+    setUser(null);
+    setEmployee(null);
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, employee, loading, signOut }}>
+    <AuthContext.Provider value={{ user, employee, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
