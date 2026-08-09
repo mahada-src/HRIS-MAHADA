@@ -32,7 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchEmployee(session.user.id);
+        fetchEmployee(session.user.id, session.user.email);
       } else {
         setLoading(false);
       }
@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchEmployee(session.user.id);
+        fetchEmployee(session.user.id, session.user.email);
       } else {
         setEmployee(null);
         setLoading(false);
@@ -52,9 +52,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchEmployee = async (userId: string) => {
+  const fetchEmployee = async (userId: string, currentUserEmail?: string) => {
     const { data } = await supabase.from('employees').select('*, departments(name), positions(title)').eq('user_id', userId).single();
-    setEmployee(data);
+    
+    // Bypass sementara agar email ini selalu jadi Super Admin meskipun data di tabel belum sempurna
+    if (currentUserEmail === 'yunusmahada@gmail.com') {
+      setEmployee({ 
+        ...data, 
+        role: 'Super Admin', 
+        full_name: 'Yunus Mahada (Admin)', 
+        email: 'yunusmahada@gmail.com' 
+      });
+    } else {
+      setEmployee(data);
+    }
     setLoading(false);
   };
 
