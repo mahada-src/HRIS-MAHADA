@@ -501,19 +501,20 @@ export default function DetailData() {
                   <input type="text" value={editData.posisi || ''} onChange={e => setEditData({...editData, posisi: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-700">Status Karyawan</label>
-                  <select value={editData.status_karyawan || ''} onChange={e => setEditData({...editData, status_karyawan: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm">
-                    <option value="">- Pilih Status -</option>
-                    <option value="Tetap">Tetap</option>
-                    <option value="Kontrak">Kontrak</option>
+                  <label className="text-xs font-medium text-slate-700">Status Kepegawaian</label>
+                  <select value={editData.status_kepegawaian || editData.employment_status || ''} onChange={e => setEditData({...editData, status_kepegawaian: e.target.value, employment_status: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm">
+                    <option value="">- Pilih Status Kepegawaian -</option>
+                    <option value="Karyawan Tetap">Karyawan Tetap</option>
                     <option value="Probation">Probation</option>
-                    <option value="Magang">Magang</option>
+                    <option value="Kontrak">Kontrak</option>
+                    <option value="Internship">Internship</option>
+                    <option value="Freelance">Freelance</option>
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-700">Status Kepegawaian</label>
-                  <select value={editData.status_kepegawaian || editData.employment_status || ''} onChange={e => setEditData({...editData, status_kepegawaian: e.target.value, employment_status: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm">
-                    <option value="">- Pilih Status -</option>
+                  <label className="text-xs font-medium text-slate-700">Status Karyawan</label>
+                  <select value={editData.status_karyawan || ''} onChange={e => setEditData({...editData, status_karyawan: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm">
+                    <option value="">- Pilih Status Karyawan -</option>
                     <option value="Aktif">Aktif</option>
                     <option value="Resign">Resign</option>
                     <option value="Cuti">Cuti</option>

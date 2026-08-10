@@ -43,7 +43,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
           <div className="hidden lg:flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-semibold text-slate-600">
             <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></span>
-            14 Jan 2024
+            {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
           </div>
         </div>
       </div>

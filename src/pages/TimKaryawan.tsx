@@ -23,6 +23,33 @@ export default function TimKaryawan() {
   const [editEmp, setEditEmp] = useState({ id: '', full_name: '', employee_code: '', email: '', department_id: '', position_id: '', employment_status: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const calculateLamaBekerja = (tglTetap?: string, tglProbation?: string) => {
+    const startDateStr = tglTetap || tglProbation;
+    if (!startDateStr) return '-';
+    
+    const startDate = new Date(startDateStr);
+    const today = new Date();
+    
+    let years = today.getFullYear() - startDate.getFullYear();
+    let months = today.getMonth() - startDate.getMonth();
+    
+    if (months < 0 || (months === 0 && today.getDate() < startDate.getDate())) {
+      years--;
+      months += 12;
+    }
+    if (today.getDate() < startDate.getDate()) {
+      months--;
+      if (months < 0) {
+        months += 12;
+      }
+    }
+
+    if (years === 0 && months === 0) return 'Kurang dari 1 bln';
+    if (years === 0) return `${months} bln`;
+    if (months === 0) return `${years} thn`;
+    return `${years} thn ${months} bln`;
+  };
+
   useEffect(() => {
     fetchEmployees();
     fetchDepsAndPos();
@@ -37,7 +64,7 @@ export default function TimKaryawan() {
         departments (name),
         positions (title)
       `)
-      .order('full_name', { ascending: true });
+      .order('employee_code', { ascending: false });
     
     if (error) console.error('Error fetching employees:', error);
     else setEmployees(data || []);
@@ -201,7 +228,8 @@ export default function TimKaryawan() {
                 <TableHead>Nama Lengkap</TableHead>
                 <TableHead>Departemen</TableHead>
                 <TableHead>Jabatan</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Lama Bekerja</TableHead>
+                <TableHead>Status Karyawan</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
@@ -235,12 +263,17 @@ export default function TimKaryawan() {
                       </span>
                     </TableCell>
                     <TableCell className="text-sm text-slate-600">{/* @ts-ignore */}{karyawan.positions?.title || '-'}</TableCell>
+                    <TableCell className="text-sm text-slate-600 font-medium">
+                      {/* @ts-ignore */}
+                      {calculateLamaBekerja(karyawan.tgl_tetap || karyawan.join_date, karyawan.tgl_probation)}
+                    </TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                        karyawan.employment_status === 'Resign' ? 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/10' :
+                        karyawan.status_karyawan === 'Resign' ? 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/10' :
+                        karyawan.status_karyawan === 'Cuti' ? 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/10' :
                         'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10'
                       }`}>
-                        {karyawan.employment_status || 'Aktif'}
+                        {karyawan.status_karyawan || 'Aktif'}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -302,6 +335,16 @@ export default function TimKaryawan() {
                   {positions.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
                 </select>
               </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700">Status Kepegawaian</label>
+                <select onChange={e => setNewEmp({...newEmp, employment_status: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm">
+                  <option value="Karyawan Tetap">Karyawan Tetap</option>
+                  <option value="Probation">Probation</option>
+                  <option value="Kontrak">Kontrak</option>
+                  <option value="Internship">Internship</option>
+                  <option value="Freelance">Freelance</option>
+                </select>
+              </div>
               <div className="pt-4 flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>Batal</Button>
                 <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={isSubmitting}>
@@ -351,12 +394,13 @@ export default function TimKaryawan() {
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-700">Status Karyawan</label>
+                <label className="text-xs font-medium text-slate-700">Status Kepegawaian</label>
                 <select value={editEmp.employment_status} onChange={e => setEditEmp({...editEmp, employment_status: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm">
-                  <option value="Tetap">Tetap</option>
+                  <option value="Karyawan Tetap">Karyawan Tetap</option>
+                  <option value="Probation">Probation</option>
                   <option value="Kontrak">Kontrak</option>
-                  <option value="Magang">Magang</option>
-                  <option value="Resign">Resign</option>
+                  <option value="Internship">Internship</option>
+                  <option value="Freelance">Freelance</option>
                 </select>
               </div>
               <div className="pt-4 flex justify-end gap-2">
