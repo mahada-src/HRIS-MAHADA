@@ -13,6 +13,11 @@ export default function PengajuanCuti() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   
+  // Filters
+  const [filterMonth, setFilterMonth] = useState((new Date().getMonth() + 1).toString().padStart(2, '0'));
+  const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
+  const [searchName, setSearchName] = useState('');
+  
   // Form State
   const [employeeId, setEmployeeId] = useState('');
   const { employee: currentEmployee } = useAuth();
@@ -97,16 +102,45 @@ export default function PengajuanCuti() {
     }
   };
 
+  const filteredData = data.filter(item => {
+    const matchName = item.employees?.full_name?.toLowerCase().includes(searchName.toLowerCase());
+    const itemDate = new Date(item.start_date);
+    const matchMonth = (itemDate.getMonth() + 1).toString().padStart(2, '0') === filterMonth;
+    const matchYear = itemDate.getFullYear().toString() === filterYear;
+    return matchName && matchMonth && matchYear;
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-800">Pengajuan Cuti</h1>
-          <p className="text-sm text-slate-500">Kelola pengajuan cuti tahunan atau khusus.</p>
+          <p className="text-sm text-slate-500">Kelola pengajuan cuti tahunan dan khusus.</p>
         </div>
         <Button onClick={() => setShowForm(!showForm)}>
           {showForm ? <><X className="w-4 h-4 mr-2" /> Batal</> : <><Plus className="w-4 h-4 mr-2" /> Tambah Pengajuan</>}
         </Button>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-4 justify-between bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+            {Array.from({ length: 12 }, (_, i) => {
+              const month = (i + 1).toString().padStart(2, '0');
+              return <option key={month} value={month}>{new Date(0, i).toLocaleString('id-ID', { month: 'long' })}</option>;
+            })}
+          </select>
+          <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+            {Array.from({ length: 5 }, (_, i) => {
+              const year = (new Date().getFullYear() - i).toString();
+              return <option key={year} value={year}>{year}</option>;
+            })}
+          </select>
+          <input type="text" placeholder="Cari Nama Karyawan..." value={searchName} onChange={(e) => setSearchName(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 min-w-[200px]" />
+        </div>
+        <div className="bg-emerald-50 text-emerald-800 px-4 py-2 rounded-lg font-semibold text-sm flex items-center border border-emerald-100">
+          Total Pengajuan: {filteredData.length}
+        </div>
       </div>
 
       {showForm && (
@@ -183,10 +217,10 @@ export default function PengajuanCuti() {
             <TableBody>
               {loading ? (
                 <TableRow><TableCell colSpan={7} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
-              ) : data.length === 0 ? (
+              ) : filteredData.length === 0 ? (
                 <TableRow><TableCell colSpan={7} className="text-center py-8 text-slate-500">Belum ada pengajuan.</TableCell></TableRow>
               ) : (
-                data.map(item => (
+                filteredData.map(item => (
                   <TableRow key={item.id}>
                     <TableCell className="font-mono text-xs">REQ-{item.id.substring(0,6).toUpperCase()}</TableCell>
                     <TableCell>

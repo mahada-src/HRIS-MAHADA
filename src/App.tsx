@@ -35,6 +35,7 @@ import PengajuanSakit from './pages/pengajuan/Sakit';
 import PengajuanIzin from './pages/pengajuan/Izin';
 import PengajuanTelat from './pages/pengajuan/Telat';
 import PengajuanIzinSetengahHari from './pages/pengajuan/IzinSetengahHari';
+import PengajuanIzinSepertigaHari from './pages/pengajuan/IzinSepertigaHari';
 import PengajuanCuti from './pages/pengajuan/Cuti';
 import PengajuanWfh from './pages/pengajuan/Wfh';
 import PengajuanLembur from './pages/pengajuan/Lembur';
@@ -60,10 +61,11 @@ export default function App() {
           <Route path="pengajuan">
             <Route path="sakit" element={<PengajuanSakit />} />
             <Route path="izin" element={<PengajuanIzin />} />
-            <Route path="telat" element={<PengajuanTelat />} />
             <Route path="izin-setengah-hari" element={<PengajuanIzinSetengahHari />} />
-            <Route path="cuti" element={<PengajuanCuti />} />
+            <Route path="izin-sepertiga-hari" element={<PengajuanIzinSepertigaHari />} />
+            <Route path="telat" element={<PengajuanTelat />} />
             <Route path="wfh" element={<PengajuanWfh />} />
+            <Route path="cuti" element={<PengajuanCuti />} />
             <Route path="lembur" element={<PengajuanLembur />} />
           </Route>
         </Route>

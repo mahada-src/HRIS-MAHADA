@@ -7,7 +7,7 @@ import { Employee } from '../../types';
 import { useAuth } from '../../lib/AuthContext';
 import { Plus, X, Check, XCircle } from 'lucide-react';
 
-export default function PengajuanIzin() {
+export default function PengajuanIzinSepertigaHari() {
   const [data, setData] = useState<any[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,8 +28,9 @@ export default function PengajuanIzin() {
       setEmployeeId(currentEmployee.id);
     }
   }, [currentEmployee, isAdmin]);
-  const [permission_type, setPermission_type] = useState('');
   const [date, setDate] = useState('');
+  const [start_time, setStart_time] = useState('');
+  const [end_time, setEnd_time] = useState('');
   const [reason, setReason] = useState('');
 
   useEffect(() => {
@@ -45,7 +46,7 @@ export default function PengajuanIzin() {
   const fetchData = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('permission_requests')
+      .from('one_third_day_requests')
       .select('*, employees(full_name, employee_code)')
       .order('created_at', { ascending: false });
       
@@ -57,19 +58,21 @@ export default function PengajuanIzin() {
     e.preventDefault();
     if (!employeeId) return alert('Pilih karyawan');
     
-    const { error } = await supabase.from('permission_requests').insert([{
+    const { error } = await supabase.from('one_third_day_requests').insert([{
       employee_id: employeeId,
       status: 'Menunggu Persetujuan',
-      permission_type,
       date,
+      start_time,
+      end_time,
       reason
     }]);
 
     if (!error) {
       setShowForm(false);
-      setEmployeeId('');
-      setPermission_type('');
+      setEmployeeId(isAdmin ? '' : (currentEmployee?.id || ''));
       setDate('');
+      setStart_time('');
+      setEnd_time('');
       setReason('');
       fetchData();
     } else {
@@ -79,18 +82,18 @@ export default function PengajuanIzin() {
   };
 
   const handleUpdateStatus = async (id: string, newStatus: string, empId: string, date: string) => {
-    const { error } = await supabase.from('permission_requests').update({ status: newStatus }).eq('id', id);
+    const { error } = await supabase.from('one_third_day_requests').update({ status: newStatus }).eq('id', id);
     if (!error) {
       // Jika disetujui, update attendance
       if (newStatus === 'Disetujui') {
         const check = await supabase.from('attendance').select('id').eq('employee_id', empId).eq('date', date).single();
         if (check.data) {
-          await supabase.from('attendance').update({ status: 'Izin', notes: 'Disetujui sistem' }).eq('id', check.data.id);
+          await supabase.from('attendance').update({ status: 'Izin 1/3 Hari', notes: 'Disetujui sistem' }).eq('id', check.data.id);
         } else {
           await supabase.from('attendance').insert([{
             employee_id: empId,
             date: date,
-            status: 'Izin',
+            status: 'Izin 1/3 Hari',
             notes: 'Disetujui sistem'
           }]);
         }
@@ -111,8 +114,8 @@ export default function PengajuanIzin() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-800">Izin Full</h1>
-          <p className="text-sm text-slate-500">Kelola pengajuan izin tidak masuk kerja.</p>
+          <h1 className="text-xl font-bold tracking-tight text-slate-800">Izin 1/3</h1>
+          <p className="text-sm text-slate-500">Kelola pengajuan izin meninggalkan pekerjaan 1/3 jam kerja.</p>
         </div>
         <Button onClick={() => setShowForm(!showForm)}>
           {showForm ? <><X className="w-4 h-4 mr-2" /> Batal</> : <><Plus className="w-4 h-4 mr-2" /> Tambah Pengajuan</>}
@@ -143,7 +146,7 @@ export default function PengajuanIzin() {
       {showForm && (
         <Card>
           <CardHeader>
-            <CardTitle>Form Izin Full</CardTitle>
+            <CardTitle>Form Izin 1/3</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl">
@@ -170,17 +173,22 @@ export default function PengajuanIzin() {
               
               
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Jenis Izin</label>
-                <input required type="text" value={permission_type} onChange={e => setPermission_type(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Tanggal Izin</label>
+                <label className="text-sm font-medium text-slate-700">Tanggal</label>
                 <input required type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Alasan Izin</label>
+                <label className="text-sm font-medium text-slate-700">Jam Mulai</label>
+                <input required type="time" value={start_time} onChange={e => setStart_time(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Jam Selesai</label>
+                <input required type="time" value={end_time} onChange={e => setEnd_time(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Alasan</label>
                 <textarea required rows={3} value={reason} onChange={e => setReason(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"></textarea>
               </div>
               
@@ -198,8 +206,9 @@ export default function PengajuanIzin() {
               <TableRow>
                 <TableHead>No. Ref</TableHead>
                 <TableHead>Karyawan</TableHead>
-                <TableHead>Jenis</TableHead>
                 <TableHead>Tanggal</TableHead>
+                <TableHead>Mulai</TableHead>
+                <TableHead>Selesai</TableHead>
                 <TableHead>Alasan</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
@@ -207,9 +216,9 @@ export default function PengajuanIzin() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
               ) : filteredData.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-slate-500">Belum ada pengajuan.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-8 text-slate-500">Belum ada pengajuan.</TableCell></TableRow>
               ) : (
                 filteredData.map(item => (
                   <TableRow key={item.id}>
@@ -220,11 +229,15 @@ export default function PengajuanIzin() {
                     </TableCell>
                     
                     <TableCell>
-                      {item.permission_type}
+                      {new Date(item.date).toLocaleDateString('id-ID')}
                     </TableCell>
                     
                     <TableCell>
-                      {new Date(item.date).toLocaleDateString('id-ID')}
+                      {item.start_time}
+                    </TableCell>
+                    
+                    <TableCell>
+                      {item.end_time}
                     </TableCell>
                     
                     <TableCell>
