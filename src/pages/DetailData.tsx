@@ -158,7 +158,7 @@ export default function DetailData() {
                       <TableHead>Nama Lengkap</TableHead>
                       <TableHead>Divisi</TableHead>
                       <TableHead>Posisi</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>Status Karyawan</TableHead>
                       <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -187,9 +187,11 @@ export default function DetailData() {
                           <TableCell>{emp.posisi || '-'}</TableCell>
                           <TableCell>
                             <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-semibold ${
-                              (emp.status_kepegawaian || emp.employment_status) === 'Resign' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
+                              emp.status_karyawan === 'Resign' ? 'bg-red-100 text-red-700' : 
+                              emp.status_karyawan === 'PHK' ? 'bg-red-100 text-red-800' : 
+                              emp.status_karyawan === 'Cuti' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
                             }`}>
-                              {emp.status_kepegawaian || emp.employment_status || 'Aktif'}
+                              {emp.status_karyawan || 'Aktif'}
                             </span>
                           </TableCell>
                           <TableCell className="text-right">
@@ -517,6 +519,7 @@ export default function DetailData() {
                     <option value="">- Pilih Status Karyawan -</option>
                     <option value="Aktif">Aktif</option>
                     <option value="Resign">Resign</option>
+                    <option value="PHK">PHK</option>
                     <option value="Cuti">Cuti</option>
                   </select>
                 </div>

@@ -19,8 +19,8 @@ export default function TimKaryawan() {
   // Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [newEmp, setNewEmp] = useState({ full_name: '', employee_code: '', email: '', department_id: '', position_id: '' });
-  const [editEmp, setEditEmp] = useState({ id: '', full_name: '', employee_code: '', email: '', department_id: '', position_id: '', employment_status: '' });
+  const [newEmp, setNewEmp] = useState({ full_name: '', employee_code: '', email: '', department_id: '', position_id: '', employment_status: 'Karyawan Tetap', status_karyawan: 'Aktif' });
+  const [editEmp, setEditEmp] = useState({ id: '', full_name: '', employee_code: '', email: '', department_id: '', position_id: '', employment_status: '', status_karyawan: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const calculateLamaBekerja = (tglTetap?: string, tglProbation?: string) => {
@@ -64,7 +64,7 @@ export default function TimKaryawan() {
         departments (name),
         positions (title)
       `)
-      .order('employee_code', { ascending: false });
+      .order('id_karyawan', { ascending: false });
     
     if (error) console.error('Error fetching employees:', error);
     else setEmployees(data || []);
@@ -100,7 +100,8 @@ export default function TimKaryawan() {
       email: newEmp.email || null,
       department_id: newEmp.department_id || null,
       position_id: newEmp.position_id || null,
-      employment_status: 'Tetap'
+      employment_status: newEmp.employment_status || 'Karyawan Tetap',
+      status_karyawan: newEmp.status_karyawan || 'Aktif'
     }]);
 
     setIsSubmitting(false);
@@ -121,7 +122,8 @@ export default function TimKaryawan() {
       email: emp.email || '',
       department_id: emp.department_id || '',
       position_id: emp.position_id || '',
-      employment_status: emp.employment_status || 'Tetap'
+      employment_status: emp.employment_status || 'Karyawan Tetap',
+      status_karyawan: emp.status_karyawan || 'Aktif'
     });
     setIsEditModalOpen(true);
   };
@@ -136,7 +138,8 @@ export default function TimKaryawan() {
       email: editEmp.email || null,
       department_id: editEmp.department_id || null,
       position_id: editEmp.position_id || null,
-      employment_status: editEmp.employment_status || 'Tetap'
+      employment_status: editEmp.employment_status || 'Karyawan Tetap',
+      status_karyawan: editEmp.status_karyawan || 'Aktif'
     }).eq('id', editEmp.id);
 
     setIsSubmitting(false);
@@ -151,9 +154,13 @@ export default function TimKaryawan() {
   const filteredEmployees = employees.filter(emp => {
     const matchSearch = emp.full_name.toLowerCase().includes(search.toLowerCase()) || 
                         emp.employee_code.toLowerCase().includes(search.toLowerCase());
+    
+    const empStatus = emp.status_karyawan || 'Aktif';
     const matchStatus = filterStatus === 'Semua' || 
-                       (filterStatus === 'Aktif' && emp.employment_status !== 'Resign') ||
-                       (filterStatus === 'Resign' && emp.employment_status === 'Resign');
+                       (filterStatus === 'Aktif' && empStatus === 'Aktif') ||
+                       (filterStatus === 'Cuti' && empStatus === 'Cuti') ||
+                       (filterStatus === 'Resign' && empStatus === 'Resign') ||
+                       (filterStatus === 'PHK' && empStatus === 'PHK');
     return matchSearch && matchStatus;
   });
 
@@ -184,22 +191,34 @@ export default function TimKaryawan() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="flex rounded-lg border border-slate-200 overflow-hidden">
             <button 
-              className={`px-4 py-2 text-sm font-semibold border-r border-slate-200 hover:bg-slate-50 transition-colors ${filterStatus === 'Semua' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
-              onClick={() => setFilterStatus('Semua')}
-            >
-              Semua
-            </button>
-            <button 
               className={`px-4 py-2 text-sm font-semibold border-r border-slate-200 hover:bg-slate-50 transition-colors ${filterStatus === 'Aktif' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
               onClick={() => setFilterStatus('Aktif')}
             >
               Aktif
             </button>
             <button 
-              className={`px-4 py-2 text-sm font-semibold hover:bg-slate-50 transition-colors ${filterStatus === 'Resign' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
+              className={`px-4 py-2 text-sm font-semibold border-r border-slate-200 hover:bg-slate-50 transition-colors ${filterStatus === 'Cuti' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
+              onClick={() => setFilterStatus('Cuti')}
+            >
+              Cuti
+            </button>
+            <button 
+              className={`px-4 py-2 text-sm font-semibold border-r border-slate-200 hover:bg-slate-50 transition-colors ${filterStatus === 'Resign' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
               onClick={() => setFilterStatus('Resign')}
             >
               Resign
+            </button>
+            <button 
+              className={`px-4 py-2 text-sm font-semibold border-r border-slate-200 hover:bg-slate-50 transition-colors ${filterStatus === 'PHK' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
+              onClick={() => setFilterStatus('PHK')}
+            >
+              PHK
+            </button>
+            <button 
+              className={`px-4 py-2 text-sm font-semibold hover:bg-slate-50 transition-colors ${filterStatus === 'Semua' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
+              onClick={() => setFilterStatus('Semua')}
+            >
+              Semua
             </button>
           </div>
         </div>
@@ -270,6 +289,7 @@ export default function TimKaryawan() {
                     <TableCell>
                       <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
                         karyawan.status_karyawan === 'Resign' ? 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/10' :
+                        karyawan.status_karyawan === 'PHK' ? 'bg-red-50 text-red-800 ring-1 ring-inset ring-red-600/10' :
                         karyawan.status_karyawan === 'Cuti' ? 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/10' :
                         'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10'
                       }`}>
@@ -337,12 +357,21 @@ export default function TimKaryawan() {
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-slate-700">Status Kepegawaian</label>
-                <select onChange={e => setNewEmp({...newEmp, employment_status: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm">
+                <select value={newEmp.employment_status} onChange={e => setNewEmp({...newEmp, employment_status: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm">
                   <option value="Karyawan Tetap">Karyawan Tetap</option>
                   <option value="Probation">Probation</option>
                   <option value="Kontrak">Kontrak</option>
                   <option value="Internship">Internship</option>
                   <option value="Freelance">Freelance</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700">Status Karyawan</label>
+                <select value={newEmp.status_karyawan} onChange={e => setNewEmp({...newEmp, status_karyawan: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm">
+                  <option value="Aktif">Aktif</option>
+                  <option value="Resign">Resign</option>
+                  <option value="PHK">PHK</option>
+                  <option value="Cuti">Cuti</option>
                 </select>
               </div>
               <div className="pt-4 flex justify-end gap-2">
@@ -401,6 +430,15 @@ export default function TimKaryawan() {
                   <option value="Kontrak">Kontrak</option>
                   <option value="Internship">Internship</option>
                   <option value="Freelance">Freelance</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700">Status Karyawan</label>
+                <select value={editEmp.status_karyawan} onChange={e => setEditEmp({...editEmp, status_karyawan: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm">
+                  <option value="Aktif">Aktif</option>
+                  <option value="Resign">Resign</option>
+                  <option value="PHK">PHK</option>
+                  <option value="Cuti">Cuti</option>
                 </select>
               </div>
               <div className="pt-4 flex justify-end gap-2">

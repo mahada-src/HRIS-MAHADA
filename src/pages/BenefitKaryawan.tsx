@@ -132,7 +132,7 @@ export default function BenefitKaryawan() {
                         >
                           <option value="">- Pilih -</option>
                           <option value="Berangkat">Berangkat</option>
-                          <option value="Antrian">Antrian</option>
+                          <option value="Selesai">Selesai</option>
                           <option value="Cancel">Cancel</option>
                         </select>
                       </td>

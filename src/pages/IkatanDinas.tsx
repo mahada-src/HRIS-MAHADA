@@ -1,23 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
 import { supabase } from '../lib/supabase';
 import { Employee } from '../types';
-import { Plus, X, Trash2 } from 'lucide-react';
+import { Plus, X, Link as LinkIcon, Car } from 'lucide-react';
 
 export default function IkatanDinas() {
   const [data, setData] = useState<any[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [filterEmployee, setFilterEmployee] = useState('Semua Karyawan');
   
   // Form State
   const [employeeId, setEmployeeId] = useState('');
   const [program_type, setProgram_type] = useState('');
   const [contract_number, setContract_number] = useState('');
   const [start_date, setStart_date] = useState('');
-  const [end_date, setEnd_date] = useState('');
+  const [nominal, setNominal] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -34,7 +35,7 @@ export default function IkatanDinas() {
     const { data, error } = await supabase
       .from('business_trip_bonds')
       .select('*, employees(full_name, employee_code)')
-      .order('created_at', { ascending: false });
+      .order('start_date', { ascending: true }); // Process chronologically for clusters
       
     if (data) setData(data);
     setLoading(false);
@@ -43,6 +44,7 @@ export default function IkatanDinas() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!employeeId) return alert('Pilih karyawan');
+    setIsSubmitting(true);
     
     const insertData: any = {
       employee_id: employeeId,
@@ -50,154 +52,268 @@ export default function IkatanDinas() {
       program_type,
       contract_number,
       start_date,
-      end_date
+      nominal: nominal || 0
     };
 
     const { error } = await supabase.from('business_trip_bonds').insert([insertData]);
 
+    setIsSubmitting(false);
     if (!error) {
       setShowForm(false);
       setEmployeeId('');
       setProgram_type('');
       setContract_number('');
       setStart_date('');
-      setEnd_date('');
+      setNominal('');
       fetchData();
     } else {
-      alert('Gagal menyimpan data');
-      console.error(error);
+      alert('Gagal menyimpan data: ' + error.message);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Yakin ingin menghapus data ini?')) {
-      const { error } = await supabase.from('business_trip_bonds').delete().eq('id', id);
-      if (!error) fetchData();
-    }
-  };
+  // Logic Clustering
+  const clusteredBonds = useMemo(() => {
+    // Group by employee
+    const byEmp: Record<string, any[]> = {};
+    data.forEach(trip => {
+      if (!byEmp[trip.employee_id]) byEmp[trip.employee_id] = [];
+      byEmp[trip.employee_id].push(trip);
+    });
+
+    const results: any[] = [];
+
+    Object.keys(byEmp).forEach(empId => {
+      const trips = byEmp[empId];
+      let currentCluster: any = null;
+
+      trips.forEach(trip => {
+        const tripDate = new Date(trip.start_date);
+        
+        if (!currentCluster) {
+          currentCluster = { 
+            employee: trip.employees,
+            trips: [trip], 
+            startDate: tripDate, 
+            endDate: tripDate, 
+            totalNominal: parseFloat(trip.nominal) || 0 
+          };
+        } else {
+          // Calculate 6 months from first trip
+          const sixMonthsLimit = new Date(currentCluster.startDate);
+          sixMonthsLimit.setMonth(sixMonthsLimit.getMonth() + 6);
+
+          if (tripDate <= sixMonthsLimit) {
+            // Add to current cluster
+            currentCluster.trips.push(trip);
+            currentCluster.totalNominal += (parseFloat(trip.nominal) || 0);
+            if (tripDate > currentCluster.endDate) {
+              currentCluster.endDate = tripDate;
+            }
+          } else {
+            // Finalize and start new
+            results.push(currentCluster);
+            currentCluster = { 
+              employee: trip.employees,
+              trips: [trip], 
+              startDate: tripDate, 
+              endDate: tripDate, 
+              totalNominal: parseFloat(trip.nominal) || 0 
+            };
+          }
+        }
+      });
+
+      if (currentCluster) {
+        results.push(currentCluster);
+      }
+    });
+
+    // Calculate Durations and End Dates
+    results.forEach(c => {
+      let durationMonths = 0;
+      if (c.totalNominal < 1000000) durationMonths = 6;
+      else if (c.totalNominal < 3000000) durationMonths = 12;
+      else if (c.totalNominal < 10000000) durationMonths = 24;
+      else if (c.totalNominal < 20000000) durationMonths = 36;
+      else durationMonths = 48;
+
+      c.durationMonths = durationMonths;
+      const bondEndDate = new Date(c.endDate);
+      bondEndDate.setMonth(bondEndDate.getMonth() + durationMonths);
+      c.bondEndDate = bondEndDate;
+      
+      const today = new Date();
+      c.isActive = bondEndDate > today;
+    });
+
+    return results.sort((a, b) => b.bondEndDate.getTime() - a.bondEndDate.getTime());
+  }, [data]);
+
+  const rawHistory = [...data].sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 max-w-full overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-800">Ikatan Dinas</h1>
-          <p className="text-sm text-slate-500">Kelola data perjanjian ikatan dinas karyawan.</p>
+          <h1 className="text-xl font-bold tracking-tight text-emerald-800">Ikatan & Perjalanan Dinas</h1>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}>
-          {showForm ? <><X className="w-4 h-4 mr-2" /> Batal</> : <><Plus className="w-4 h-4 mr-2" /> Tambah Data</>}
+        <Button onClick={() => setShowForm(!showForm)} className="bg-emerald-700 hover:bg-emerald-800 text-white">
+          {showForm ? <><X className="w-4 h-4 mr-2" /> Batal</> : <><Plus className="w-4 h-4 mr-2" /> Tambah Perjalanan</>}
         </Button>
       </div>
 
       {showForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Form Ikatan Dinas</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card className="border-0 shadow-sm bg-white rounded-xl">
+          <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Karyawan</label>
-                <select 
-                  required
-                  value={employeeId} 
-                  onChange={e => setEmployeeId(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                >
-                  <option value="">-- Pilih Karyawan --</option>
-                  {employees.map(emp => (
-                    <option key={emp.id} value={emp.id}>{emp.employee_code} - {emp.full_name}</option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-700">Karyawan</label>
+                  <select required value={employeeId} onChange={e => setEmployeeId(e.target.value)} className="w-full rounded border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                    <option value="">-- Pilih Karyawan --</option>
+                    {employees.map(emp => (
+                      <option key={emp.id} value={emp.id}>{emp.full_name} ({emp.employee_code})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-700">Tanggal</label>
+                  <input required type="date" value={start_date} onChange={e => setStart_date(e.target.value)} className="w-full rounded border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-700">No. Surat</label>
+                  <input type="text" value={contract_number} onChange={e => setContract_number(e.target.value)} className="w-full rounded border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" placeholder="011/HC-SPPD/V/2026" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-700">Nama Kegiatan / Program</label>
+                  <input required type="text" value={program_type} onChange={e => setProgram_type(e.target.value)} className="w-full rounded border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" placeholder="IDMC" />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-xs font-semibold text-slate-700">Nominal (Rp)</label>
+                  <input required type="number" value={nominal} onChange={e => setNominal(e.target.value)} className="w-full rounded border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" placeholder="1500000" />
+                </div>
               </div>
-              
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Program / Jenis</label>
-                <input required type="text" value={program_type} onChange={e => setProgram_type(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
+              <div className="pt-2">
+                <Button type="submit" disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700 text-white w-full md:w-auto">
+                  {isSubmitting ? 'Menyimpan...' : 'Simpan Data'}
+                </Button>
               </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">No. Kontrak</label>
-                <input  type="text" value={contract_number} onChange={e => setContract_number(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Mulai</label>
-                <input required type="date" value={start_date} onChange={e => setStart_date(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Selesai</label>
-                <input required type="date" value={end_date} onChange={e => setEnd_date(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
-              </div>
-              
-
-              <Button type="submit" className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white">Simpan Data</Button>
             </form>
           </CardContent>
         </Card>
       )}
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Karyawan</TableHead>
-                <TableHead>Program</TableHead>
-                <TableHead>No. Kontrak</TableHead>
-                <TableHead>Mulai</TableHead>
-                <TableHead>Selesai</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
-              ) : data.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-slate-500">Belum ada data.</TableCell></TableRow>
-              ) : (
-                data.map(item => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <div className="font-medium text-slate-800">{item.employees?.full_name}</div>
-                      <div className="text-xs text-slate-500">{item.employees?.employee_code}</div>
-                    </TableCell>
-                    
-                    <TableCell>
-                      {item.program_type || '-'}
-                    </TableCell>
-                    
-                    <TableCell>
-                      {item.contract_number || '-'}
-                    </TableCell>
-                    
-                    <TableCell>
-                      {item.start_date ? new Date(item.start_date).toLocaleDateString('id-ID') : '-'}
-                    </TableCell>
-                    
-                    <TableCell>
-                      {item.end_date ? new Date(item.end_date).toLocaleDateString('id-ID') : '-'}
-                    </TableCell>
-                    
-                    <TableCell>
-                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/10">
-                        {item.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(item.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Kolom Kiri: Riwayat */}
+        <Card className="border-0 shadow-sm rounded-xl overflow-hidden border-t-4 border-t-blue-500 bg-white flex flex-col h-[600px]">
+          <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+            <div className="flex items-center text-sm font-semibold text-slate-700">
+              <Car className="w-4 h-4 mr-2 text-blue-500" />
+              Riwayat Perjalanan Dinas
+            </div>
+            <select value={filterEmployee} onChange={(e) => setFilterEmployee(e.target.value)} className="text-xs border-slate-200 rounded px-2 py-1">
+              <option value="Semua Karyawan">Semua Karyawan</option>
+              {employees.map(emp => <option key={emp.id} value={emp.full_name}>{emp.full_name}</option>)}
+            </select>
+          </div>
+          <div className="overflow-auto flex-1">
+            <table className="w-full text-sm text-left whitespace-nowrap">
+              <thead className="text-[10px] font-bold text-emerald-800 bg-[#cbf5e6] uppercase sticky top-0 z-10">
+                <tr>
+                  <th className="px-4 py-3">TANGGAL</th>
+                  <th className="px-4 py-3">KARYAWAN</th>
+                  <th className="px-4 py-3">NO SURAT & KEGIATAN</th>
+                  <th className="px-4 py-3 text-right">NOMINAL (RP)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {loading ? (
+                  <tr><td colSpan={4} className="text-center py-8 text-slate-500">Memuat data...</td></tr>
+                ) : rawHistory.filter(h => filterEmployee === 'Semua Karyawan' || h.employees?.full_name === filterEmployee).length === 0 ? (
+                  <tr><td colSpan={4} className="text-center py-8 text-slate-500">Belum ada riwayat.</td></tr>
+                ) : (
+                  rawHistory
+                    .filter(h => filterEmployee === 'Semua Karyawan' || h.employees?.full_name === filterEmployee)
+                    .map(item => (
+                    <tr key={item.id} className="hover:bg-slate-50/50">
+                      <td className="px-4 py-3 text-slate-600">
+                        {item.start_date ? new Date(item.start_date).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'}) : '-'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-semibold text-slate-800">{item.employees?.full_name || 'Unknown'}</div>
+                        <div className="text-xs text-slate-500">{item.employees?.employee_code}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 mb-1">
+                          {item.contract_number || '-'}
+                        </div>
+                        <div className="text-slate-700">{item.program_type}</div>
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-slate-800">
+                        {item.nominal ? `Rp ${parseInt(item.nominal).toLocaleString('id-ID')}` : 'Rp 0'}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        {/* Kolom Kanan: Status Ikatan */}
+        <Card className="border-0 shadow-sm rounded-xl overflow-hidden border-t-4 border-t-amber-400 bg-white flex flex-col h-[600px]">
+          <div className="p-4 border-b border-slate-100 flex items-center bg-white shrink-0 text-sm font-semibold text-slate-700">
+            <LinkIcon className="w-4 h-4 mr-2 text-amber-500" />
+            Status Masa Ikatan Dinas
+          </div>
+          <div className="overflow-auto flex-1">
+            <table className="w-full text-sm text-left whitespace-nowrap">
+              <thead className="text-[10px] font-bold text-emerald-800 bg-[#cbf5e6] uppercase sticky top-0 z-10">
+                <tr>
+                  <th className="px-4 py-3">NAMA KARYAWAN</th>
+                  <th className="px-4 py-3 text-right">TOTAL BIAYA</th>
+                  <th className="px-4 py-3">MASA BERAKHIR IKATAN</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {clusteredBonds.filter(c => filterEmployee === 'Semua Karyawan' || c.employee?.full_name === filterEmployee).length === 0 ? (
+                  <tr><td colSpan={3} className="text-center py-8 text-slate-500">Tidak ada ikatan dinas aktif/riwayat.</td></tr>
+                ) : (
+                  clusteredBonds
+                  .filter(c => filterEmployee === 'Semua Karyawan' || c.employee?.full_name === filterEmployee)
+                  .map((cluster, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/50">
+                      <td className="px-4 py-4">
+                        <div className="font-semibold text-slate-800">{cluster.employee?.full_name || 'Unknown'}</div>
+                        <div className="text-xs text-slate-500">{cluster.employee?.employee_code}</div>
+                      </td>
+                      <td className="px-4 py-4 text-right font-bold text-slate-800">
+                        Rp {cluster.totalNominal.toLocaleString('id-ID')}
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className={`font-semibold ${cluster.isActive ? 'text-red-500' : 'text-slate-500'}`}>
+                          {cluster.bondEndDate.toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year:'numeric'})}
+                        </div>
+                        {cluster.isActive ? (
+                          <div className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-600 text-white mt-1 shadow-sm">
+                            Ikatan Dinas Aktif ({cluster.durationMonths} Bulan)
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-200 text-slate-600 mt-1">
+                            Selesai ({cluster.durationMonths} Bulan)
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+      </div>
     </div>
   );
 }
