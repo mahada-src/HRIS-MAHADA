@@ -1,189 +1,187 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
+import { Card, CardContent } from '../components/ui/Card';
 import { supabase } from '../lib/supabase';
 import { Employee } from '../types';
-import { Plus, X, Trash2 } from 'lucide-react';
 
 export default function BenefitKaryawan() {
-  const [data, setData] = useState<any[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  
-  // Form State
-  const [employeeId, setEmployeeId] = useState('');
-  const [benefit_type, setBenefit_type] = useState('');
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
 
   useEffect(() => {
-    fetchData();
     fetchEmployees();
   }, []);
 
   const fetchEmployees = async () => {
-    const { data } = await supabase.from('employees').select('id, full_name, employee_code').order('full_name');
-    if (data) setEmployees(data);
-  };
-
-  const fetchData = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('benefits')
-      .select('*, employees(full_name, employee_code)')
-      .order('created_at', { ascending: false });
+      .from('employees')
+      .select('*')
+      .order('full_name', { ascending: true });
       
-    if (data) setData(data);
+    if (data) setEmployees(data);
     setLoading(false);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!employeeId) return alert('Pilih karyawan');
-    
-    const insertData: any = {
-      employee_id: employeeId,
-      status: 'Active',
-      benefit_type,
-      description,
-      amount
-    };
+  const handleUpdate = async (id: string, field: string, value: string) => {
+    // Optimistic UI update
+    setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, [field]: value } : emp));
 
-    const { error } = await supabase.from('benefits').insert([insertData]);
+    const { error } = await supabase
+      .from('employees')
+      .update({ [field]: value })
+      .eq('id', id);
 
-    if (!error) {
-      setShowForm(false);
-      setEmployeeId('');
-      setBenefit_type('');
-      setDescription('');
-      setAmount('');
-      fetchData();
-    } else {
-      alert('Gagal menyimpan data');
-      console.error(error);
+    if (error) {
+      alert('Gagal menyimpan perubahan: ' + error.message);
+      fetchEmployees(); // Revert
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Yakin ingin menghapus data ini?')) {
-      const { error } = await supabase.from('benefits').delete().eq('id', id);
-      if (!error) fetchData();
+  const getLamaBekerjaDetail = (tglTetap?: string, tglProbation?: string) => {
+    const startDateStr = tglTetap || tglProbation;
+    if (!startDateStr) return { years: 0, months: 0, days: 0, formatted: '-' };
+    
+    const startDate = new Date(startDateStr);
+    const today = new Date();
+    
+    let years = today.getFullYear() - startDate.getFullYear();
+    let months = today.getMonth() - startDate.getMonth();
+    let days = today.getDate() - startDate.getDate();
+    
+    if (days < 0) {
+      months--;
+      const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+      days += prevMonth.getDate();
     }
+    
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+
+    return { years, months, days, formatted: `${years} Thn ${months} Bln ${days} Hr` };
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-800">Benefit Karyawan</h1>
-          <p className="text-sm text-slate-500">Kelola data benefit dan fasilitas untuk karyawan.</p>
-        </div>
-        <Button onClick={() => setShowForm(!showForm)}>
-          {showForm ? <><X className="w-4 h-4 mr-2" /> Batal</> : <><Plus className="w-4 h-4 mr-2" /> Tambah Data</>}
-        </Button>
+    <div className="space-y-6 max-w-full overflow-x-hidden">
+      <div>
+        <h1 className="text-xl font-bold tracking-tight text-emerald-800">Benefit Karyawan</h1>
+        <p className="text-sm text-emerald-600/80">Pantau program khusus, BPJS, dan benefit jangka panjang karyawan.</p>
       </div>
 
-      {showForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Form Benefit Karyawan</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Karyawan</label>
-                <select 
-                  required
-                  value={employeeId} 
-                  onChange={e => setEmployeeId(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                >
-                  <option value="">-- Pilih Karyawan --</option>
-                  {employees.map(emp => (
-                    <option key={emp.id} value={emp.id}>{emp.employee_code} - {emp.full_name}</option>
-                  ))}
-                </select>
-              </div>
-              
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Jenis Benefit</label>
-                <input required type="text" value={benefit_type} onChange={e => setBenefit_type(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Deskripsi</label>
-                <textarea  rows={3} value={description} onChange={e => setDescription(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"></textarea>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Nominal / Nilai (Rp)</label>
-                <input  type="number" value={amount} onChange={e => setAmount(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
-              </div>
-              
-
-              <Button type="submit" className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white">Simpan Data</Button>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Karyawan</TableHead>
-                <TableHead>Jenis</TableHead>
-                <TableHead>Nilai (Rp)</TableHead>
-                <TableHead>Deskripsi</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+      <Card className="border-0 shadow-sm rounded-xl overflow-hidden bg-white">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left whitespace-nowrap">
+            <thead className="text-xs font-semibold text-emerald-800 bg-[#cbf5e6] uppercase">
+              <tr>
+                <th className="px-4 py-4 rounded-tl-xl">KARYAWAN</th>
+                <th className="px-4 py-4">LAMA BEKERJA</th>
+                <th className="px-4 py-4">STATUS UMROH</th>
+                <th className="px-4 py-4">AKSI UMROH</th>
+                <th className="px-4 py-4">STATUS BPJS</th>
+                <th className="px-4 py-4">AKSI BPJS</th>
+                <th className="px-4 py-4 rounded-tr-xl">PROGRAM QURBAN</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
-              ) : data.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">Belum ada data.</TableCell></TableRow>
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-slate-500">Memuat data...</td>
+                </tr>
+              ) : employees.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-slate-500">Tidak ada data karyawan ditemukan.</td>
+                </tr>
               ) : (
-                data.map(item => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <div className="font-medium text-slate-800">{item.employees?.full_name}</div>
-                      <div className="text-xs text-slate-500">{item.employees?.employee_code}</div>
-                    </TableCell>
-                    
-                    <TableCell>
-                      {item.benefit_type || '-'}
-                    </TableCell>
-                    
-                    <TableCell>
-                      {item.amount ? 'Rp ' + parseInt(item.amount).toLocaleString('id-ID') : '-'}
-                    </TableCell>
-                    
-                    <TableCell>
-                      {item.description || '-'}
-                    </TableCell>
-                    
-                    <TableCell>
-                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/10">
-                        {item.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(item.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+                employees.map((emp) => {
+                  const lamaKerja = getLamaBekerjaDetail(emp.tgl_tetap || emp.join_date, emp.tgl_probation);
+                  
+                  const isUmrohEligible = lamaKerja.years >= 5;
+                  const isBPJSEligible = lamaKerja.years >= 2;
+
+                  return (
+                    <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="font-semibold text-slate-800">{emp.full_name}</div>
+                        <div className="text-xs text-slate-500 font-medium">{emp.id_karyawan || emp.employee_code || 'undefined'}</div>
+                      </td>
+                      <td className="px-4 py-3 font-medium text-slate-700">
+                        {lamaKerja.formatted}
+                      </td>
+                      <td className="px-4 py-3">
+                        {lamaKerja.formatted === '-' ? (
+                          <span className="text-slate-400 text-xs italic">Data tgl belum diisi</span>
+                        ) : isUmrohEligible ? (
+                          <span className="inline-flex items-center rounded bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white shadow-sm">
+                            Memenuhi Syarat
+                          </span>
+                        ) : (
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className="inline-flex items-center rounded bg-slate-500 px-2.5 py-1 text-xs font-medium text-white shadow-sm">
+                              Belum Memenuhi
+                            </span>
+                            <span className="text-[10px] text-red-500 font-medium">*Min 5 Tahun</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <select 
+                          value={emp.aksi_umroh || ''} 
+                          onChange={(e) => handleUpdate(emp.id, 'aksi_umroh', e.target.value)}
+                          className="w-32 rounded border border-blue-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                          <option value="">- Pilih -</option>
+                          <option value="Berangkat">Berangkat</option>
+                          <option value="Antrian">Antrian</option>
+                          <option value="Cancel">Cancel</option>
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        {lamaKerja.formatted === '-' ? (
+                          <span className="text-slate-400 text-xs italic">-</span>
+                        ) : isBPJSEligible ? (
+                          <span className="inline-flex items-center rounded bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white shadow-sm">
+                            Memenuhi Syarat
+                          </span>
+                        ) : (
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className="inline-flex items-center rounded bg-slate-500 px-2.5 py-1 text-xs font-medium text-white shadow-sm">
+                              Belum Memenuhi
+                            </span>
+                            <span className="text-[10px] text-red-500 font-medium">*Min 2 Tahun</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <select 
+                          value={emp.aksi_bpjs || ''} 
+                          onChange={(e) => handleUpdate(emp.id, 'aksi_bpjs', e.target.value)}
+                          className="w-32 rounded border border-blue-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                          <option value="">- Pilih -</option>
+                          <option value="Terdaftar">Terdaftar</option>
+                          <option value="Selesai">Selesai</option>
+                          <option value="Cancel">Cancel</option>
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <select 
+                          value={emp.program_qurban || ''} 
+                          onChange={(e) => handleUpdate(emp.id, 'program_qurban', e.target.value)}
+                          className="w-32 rounded border border-blue-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                          <option value="">- Pilih -</option>
+                          <option value="Antrian">Antrian</option>
+                          <option value="Berqurban">Berqurban</option>
+                        </select>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
-            </TableBody>
-          </Table>
-        </CardContent>
+            </tbody>
+          </table>
+        </div>
       </Card>
     </div>
   );
