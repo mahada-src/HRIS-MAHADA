@@ -18,7 +18,9 @@ export default function TimKaryawan() {
 
   // Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [newEmp, setNewEmp] = useState({ full_name: '', employee_code: '', email: '', department_id: '', position_id: '' });
+  const [editEmp, setEditEmp] = useState({ id: '', full_name: '', employee_code: '', email: '', department_id: '', position_id: '', employment_status: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -80,6 +82,41 @@ export default function TimKaryawan() {
     } else {
       setIsAddModalOpen(false);
       setNewEmp({ full_name: '', employee_code: '', email: '', department_id: '', position_id: '' });
+      fetchEmployees();
+    }
+  };
+
+  const openEditModal = (emp: Employee) => {
+    setEditEmp({
+      id: emp.id,
+      full_name: emp.full_name,
+      employee_code: emp.employee_code,
+      email: emp.email || '',
+      department_id: emp.department_id || '',
+      position_id: emp.position_id || '',
+      employment_status: emp.employment_status || 'Tetap'
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    const { error } = await supabase.from('employees').update({
+      full_name: editEmp.full_name,
+      employee_code: editEmp.employee_code,
+      email: editEmp.email || null,
+      department_id: editEmp.department_id || null,
+      position_id: editEmp.position_id || null,
+      employment_status: editEmp.employment_status || 'Tetap'
+    }).eq('id', editEmp.id);
+
+    setIsSubmitting(false);
+    if (error) {
+      alert('Gagal mengupdate karyawan: ' + error.message);
+    } else {
+      setIsEditModalOpen(false);
       fetchEmployees();
     }
   };
@@ -160,7 +197,8 @@ export default function TimKaryawan() {
             <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Karyawan</TableHead>
+                <TableHead>ID Karyawan</TableHead>
+                <TableHead>Nama Lengkap</TableHead>
                 <TableHead>Departemen</TableHead>
                 <TableHead>Jabatan</TableHead>
                 <TableHead>Status</TableHead>
@@ -179,15 +217,15 @@ export default function TimKaryawan() {
               ) : (
                 filteredEmployees.map((karyawan) => (
                   <TableRow key={karyawan.id}>
+                    <TableCell className="font-medium text-slate-800">
+                      {karyawan.id_karyawan || karyawan.employee_code || '-'}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600">
+                        <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600 text-xs">
                           {karyawan.full_name.substring(0, 2).toUpperCase()}
                         </div>
-                        <div>
-                          <p className="font-semibold text-slate-800">{karyawan.full_name}</p>
-                          <p className="text-xs text-slate-500">{karyawan.employee_code}</p>
-                        </div>
+                        <span className="font-semibold text-slate-800">{karyawan.full_name}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -210,7 +248,7 @@ export default function TimKaryawan() {
                         <Button variant="ghost" size="sm" onClick={() => navigate('/detail?id=' + karyawan.id)} title="Lihat Detail">
                           <Eye className="h-4 w-4 text-emerald-600" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => alert('Fitur Edit belum tersedia.')} title="Edit">
+                        <Button variant="ghost" size="sm" onClick={() => openEditModal(karyawan)} title="Edit">
                           <Edit2 className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(karyawan.id)} title="Hapus">
@@ -243,7 +281,7 @@ export default function TimKaryawan() {
                 <input required type="text" value={newEmp.full_name} onChange={e => setNewEmp({...newEmp, full_name: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm" placeholder="Contoh: Budi Santoso" />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-700">NIK (Opsional)</label>
+                <label className="text-xs font-medium text-slate-700">ID Karyawan (Opsional)</label>
                 <input type="text" value={newEmp.employee_code} onChange={e => setNewEmp({...newEmp, employee_code: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm" placeholder="Dikosongkan akan generate otomatis" />
               </div>
               <div className="space-y-1">
@@ -268,6 +306,63 @@ export default function TimKaryawan() {
                 <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>Batal</Button>
                 <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={isSubmitting}>
                   {isSubmitting ? 'Menyimpan...' : 'Simpan Karyawan'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edit Karyawan */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100">
+              <h3 className="font-bold text-slate-800">Edit Karyawan</h3>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleEditEmployee} className="p-4 space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700">Nama Lengkap <span className="text-red-500">*</span></label>
+                <input required type="text" value={editEmp.full_name} onChange={e => setEditEmp({...editEmp, full_name: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm" placeholder="Contoh: Budi Santoso" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700">ID Karyawan <span className="text-red-500">*</span></label>
+                <input required type="text" value={editEmp.employee_code} onChange={e => setEditEmp({...editEmp, employee_code: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700">Email</label>
+                <input type="email" value={editEmp.email} onChange={e => setEditEmp({...editEmp, email: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm" placeholder="budi@contoh.com" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700">Departemen</label>
+                <select value={editEmp.department_id} onChange={e => setEditEmp({...editEmp, department_id: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm">
+                  <option value="">-- Pilih Departemen --</option>
+                  {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700">Jabatan</label>
+                <select value={editEmp.position_id} onChange={e => setEditEmp({...editEmp, position_id: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm">
+                  <option value="">-- Pilih Jabatan --</option>
+                  {positions.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700">Status Karyawan</label>
+                <select value={editEmp.employment_status} onChange={e => setEditEmp({...editEmp, employment_status: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm">
+                  <option value="Tetap">Tetap</option>
+                  <option value="Kontrak">Kontrak</option>
+                  <option value="Magang">Magang</option>
+                  <option value="Resign">Resign</option>
+                </select>
+              </div>
+              <div className="pt-4 flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>Batal</Button>
+                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={isSubmitting}>
+                  {isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan'}
                 </Button>
               </div>
             </form>

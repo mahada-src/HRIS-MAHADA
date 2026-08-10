@@ -43,7 +43,43 @@ export default function Dashboard() {
     if (departmentId !== 'all') {
       empQuery = empQuery.eq('department_id', departmentId);
     }
-    const emp = await empQuery;
+    // Tanggal untuk filter chart
+    const startDate = `${year}-${month.padStart(2, '0')}-01`;
+    const nextMonth = parseInt(month) === 12 ? 1 : parseInt(month) + 1;
+    const nextYear = parseInt(month) === 12 ? parseInt(year) + 1 : parseInt(year);
+    const endDate = `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`;
+
+    // Hadir & Terlambat hari ini
+    const today = new Date().toISOString().split('T')[0];
+    let attQuery = supabase.from('attendance').select('status, date, employees!inner(department_id)').gte('date', startDate).lt('date', endDate);
+    if (departmentId !== 'all') {
+      attQuery = attQuery.eq('employees.department_id', departmentId);
+    }
+
+    // Menunggu persetujuan
+    const requestTables = [
+      { table: 'sick_requests', type: 'Sakit' },
+      { table: 'permission_requests', type: 'Izin' },
+      { table: 'late_requests', type: 'Telat' },
+      { table: 'half_day_requests', type: 'Izin Setengah Hari' },
+      { table: 'leave_requests', type: 'Cuti' },
+      { table: 'wfh_requests', type: 'WFH' },
+      { table: 'overtime_requests', type: 'Lembur' }
+    ];
+
+    const [emp, att, ...reqResults] = await Promise.all([
+      empQuery,
+      attQuery,
+      ...requestTables.map(async (rt) => {
+        let query = supabase.from(rt.table).select('*, employees!inner(full_name, department_id)').eq('status', 'Menunggu Persetujuan');
+        if (departmentId !== 'all') {
+          query = query.eq('employees.department_id', departmentId);
+        }
+        const { data } = await query;
+        return (data || []).map(d => ({ ...d, requestType: rt.type }));
+      })
+    ]);
+
     const allEmps = emp.data || [];
     const empCount = allEmps.length;
     const activeEmpCount = allEmps.filter(e => e.employment_status !== 'Resign').length;
@@ -60,19 +96,6 @@ export default function Dashboard() {
       }
     }
 
-    // Tanggal untuk filter chart
-    const startDate = `${year}-${month.padStart(2, '0')}-01`;
-    const nextMonth = parseInt(month) === 12 ? 1 : parseInt(month) + 1;
-    const nextYear = parseInt(month) === 12 ? parseInt(year) + 1 : parseInt(year);
-    const endDate = `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`;
-
-    // Hadir & Terlambat hari ini
-    const today = new Date().toISOString().split('T')[0];
-    let attQuery = supabase.from('attendance').select('status, date, employees!inner(department_id)').gte('date', startDate).lt('date', endDate);
-    if (departmentId !== 'all') {
-      attQuery = attQuery.eq('employees.department_id', departmentId);
-    }
-    const att = await attQuery;
     const allAtt = att.data || [];
     
     const todayAtt = allAtt.filter(a => a.date === today);
@@ -95,27 +118,6 @@ export default function Dashboard() {
     })).filter(item => item.total > 0);
     setAttendanceData(chartData);
 
-    // Menunggu persetujuan
-    const requestTables = [
-      { table: 'sick_requests', type: 'Sakit' },
-      { table: 'permission_requests', type: 'Izin' },
-      { table: 'late_requests', type: 'Telat' },
-      { table: 'half_day_requests', type: 'Izin Setengah Hari' },
-      { table: 'leave_requests', type: 'Cuti' },
-      { table: 'wfh_requests', type: 'WFH' },
-      { table: 'overtime_requests', type: 'Lembur' }
-    ];
-
-    const reqPromises = requestTables.map(async (rt) => {
-      let query = supabase.from(rt.table).select('*, employees!inner(full_name, department_id)').eq('status', 'Menunggu Persetujuan');
-      if (departmentId !== 'all') {
-        query = query.eq('employees.department_id', departmentId);
-      }
-      const { data } = await query;
-      return (data || []).map(d => ({ ...d, requestType: rt.type }));
-    });
-
-    const reqResults = await Promise.all(reqPromises);
     const allPending = reqResults.flat().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     const pendingCount = allPending.length;
 
