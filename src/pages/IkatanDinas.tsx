@@ -52,6 +52,7 @@ export default function IkatanDinas() {
       program_type,
       contract_number,
       start_date,
+      end_date: start_date,
       nominal: nominal || 0
     };
 
