@@ -14,10 +14,18 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
     return <div className="h-screen flex flex-col items-center justify-center text-slate-800 bg-slate-50">
       <h2 className="text-2xl font-bold mb-2">Akses Ditolak</h2>
       <p className="text-slate-500 mb-4">Anda tidak memiliki hak akses untuk halaman ini.</p>
-      <a href="/" className="text-emerald-600 hover:underline">Kembali ke Dashboard</a>
+      <a href="/tim" className="text-emerald-600 hover:underline">Kembali ke Beranda</a>
     </div>;
   }
   return <>{children}</>;
+};
+
+const IndexRoute = () => {
+  const { employee } = useAuth();
+  if (employee?.role === 'Karyawan') {
+    return <Navigate to="/tim" replace />;
+  }
+  return <Dashboard />;
 };
 import Dashboard from './pages/Dashboard';
 import TimKaryawan from './pages/TimKaryawan';
@@ -47,16 +55,16 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route index element={<Dashboard />} />
-          <Route path="tim" element={<ProtectedRoute allowedRoles={['Super Admin', 'HR', 'Manager']}><TimKaryawan /></ProtectedRoute>} />
+          <Route index element={<IndexRoute />} />
+          <Route path="tim" element={<TimKaryawan />} />
           <Route path="detail" element={<DetailData />} />
           <Route path="absensi" element={<RekapAbsensi />} />
           <Route path="benefit" element={<BenefitKaryawan />} />
-          <Route path="ikatan-dinas" element={<ProtectedRoute allowedRoles={['Super Admin', 'HR']}><IkatanDinas /></ProtectedRoute>} />
-          <Route path="pelanggaran" element={<ProtectedRoute allowedRoles={['Super Admin', 'HR']}><Pelanggaran /></ProtectedRoute>} />
+          <Route path="ikatan-dinas" element={<IkatanDinas />} />
+          <Route path="pelanggaran" element={<Pelanggaran />} />
           <Route path="pengaturan" element={<ProtectedRoute allowedRoles={['Super Admin', 'HR']}><Pengaturan /></ProtectedRoute>} />
           <Route path="administrasi" element={<ProtectedRoute allowedRoles={['Super Admin', 'HR']}><Administrasi /></ProtectedRoute>} />
-          <Route path="manajemen-user" element={<ProtectedRoute allowedRoles={['Super Admin', 'HR']}><ManajemenUser /></ProtectedRoute>} />
+          <Route path="manajemen-user" element={<ProtectedRoute allowedRoles={['Super Admin']}><ManajemenUser /></ProtectedRoute>} />
           
           <Route path="pengajuan">
             <Route path="sakit" element={<PengajuanSakit />} />

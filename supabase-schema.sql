@@ -206,21 +206,37 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_departments_modtime ON public.departments;
 CREATE TRIGGER update_departments_modtime BEFORE UPDATE ON public.departments FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+DROP TRIGGER IF EXISTS update_positions_modtime ON public.positions;
 CREATE TRIGGER update_positions_modtime BEFORE UPDATE ON public.positions FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+DROP TRIGGER IF EXISTS update_employees_modtime ON public.employees;
 CREATE TRIGGER update_employees_modtime BEFORE UPDATE ON public.employees FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+DROP TRIGGER IF EXISTS update_attendance_modtime ON public.attendance;
 CREATE TRIGGER update_attendance_modtime BEFORE UPDATE ON public.attendance FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+DROP TRIGGER IF EXISTS update_sick_requests_modtime ON public.sick_requests;
 CREATE TRIGGER update_sick_requests_modtime BEFORE UPDATE ON public.sick_requests FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+DROP TRIGGER IF EXISTS update_permission_requests_modtime ON public.permission_requests;
 CREATE TRIGGER update_permission_requests_modtime BEFORE UPDATE ON public.permission_requests FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+DROP TRIGGER IF EXISTS update_late_requests_modtime ON public.late_requests;
 CREATE TRIGGER update_late_requests_modtime BEFORE UPDATE ON public.late_requests FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+DROP TRIGGER IF EXISTS update_half_day_requests_modtime ON public.half_day_requests;
 CREATE TRIGGER update_half_day_requests_modtime BEFORE UPDATE ON public.half_day_requests FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+DROP TRIGGER IF EXISTS update_leave_requests_modtime ON public.leave_requests;
 CREATE TRIGGER update_leave_requests_modtime BEFORE UPDATE ON public.leave_requests FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+DROP TRIGGER IF EXISTS update_wfh_requests_modtime ON public.wfh_requests;
 CREATE TRIGGER update_wfh_requests_modtime BEFORE UPDATE ON public.wfh_requests FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+DROP TRIGGER IF EXISTS update_overtime_requests_modtime ON public.overtime_requests;
 CREATE TRIGGER update_overtime_requests_modtime BEFORE UPDATE ON public.overtime_requests FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+DROP TRIGGER IF EXISTS update_benefits_modtime ON public.benefits;
 CREATE TRIGGER update_benefits_modtime BEFORE UPDATE ON public.benefits FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+DROP TRIGGER IF EXISTS update_business_trip_bonds_modtime ON public.business_trip_bonds;
 CREATE TRIGGER update_business_trip_bonds_modtime BEFORE UPDATE ON public.business_trip_bonds FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+DROP TRIGGER IF EXISTS update_violations_modtime ON public.violations;
 CREATE TRIGGER update_violations_modtime BEFORE UPDATE ON public.violations FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+DROP TRIGGER IF EXISTS update_notifications_modtime ON public.notifications;
 CREATE TRIGGER update_notifications_modtime BEFORE UPDATE ON public.notifications FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+DROP TRIGGER IF EXISTS update_activity_logs_modtime ON public.activity_logs;
 CREATE TRIGGER update_activity_logs_modtime BEFORE UPDATE ON public.activity_logs FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 
 -- ==========================================
@@ -326,6 +342,7 @@ CREATE TABLE IF NOT EXISTS public.documents (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+DROP TRIGGER IF EXISTS update_documents_modtime ON public.documents;
 CREATE TRIGGER update_documents_modtime BEFORE UPDATE ON public.documents FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read documents" ON public.documents FOR SELECT USING (true);
@@ -339,6 +356,7 @@ CREATE TABLE IF NOT EXISTS public.document_categories (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+DROP TRIGGER IF EXISTS update_document_categories_modtime ON public.document_categories;
 CREATE TRIGGER update_document_categories_modtime BEFORE UPDATE ON public.document_categories FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 ALTER TABLE public.document_categories ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read doc categories" ON public.document_categories FOR SELECT USING (true);

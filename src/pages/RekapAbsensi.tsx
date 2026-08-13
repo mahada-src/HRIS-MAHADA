@@ -4,8 +4,12 @@ import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/AuthContext';
 
 export default function RekapAbsensi() {
+  const { employee: currentUser } = useAuth();
+  const role = currentUser?.role || 'Karyawan';
+  const isManagerOrKaryawan = role === 'Manager' || role === 'Karyawan';
   const [employees, setEmployees] = useState<any[]>([]);
   const [attendances, setAttendances] = useState<any[]>([]);
   const [workingDays, setWorkingDays] = useState<any[]>([]);
@@ -32,7 +36,13 @@ export default function RekapAbsensi() {
     setLoading(true);
     
     // Fetch Employees
-    const { data: empData } = await supabase.from('employees').select('id, full_name, employee_code').order('employee_code', { ascending: false });
+    let empQuery = supabase.from('employees').select('id, full_name, employee_code, department_id').order('employee_code', { ascending: false });
+    if (role === 'Karyawan') {
+      empQuery = empQuery.eq('id', currentUser?.id);
+    } else if (role === 'Manager') {
+      empQuery = empQuery.eq('department_id', currentUser?.department_id);
+    }
+    const { data: empData } = await empQuery;
     if (empData) setEmployees(empData);
     
     // Calculate period: 21st of prev month to 20th of current month
@@ -164,9 +174,11 @@ export default function RekapAbsensi() {
             <Download className="mr-2 h-4 w-4 text-emerald-600" />
             Download
           </Button>
-          <Button size="sm" className="bg-emerald-700 hover:bg-emerald-800 text-white" onClick={() => setShowModal(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Tambah Hari Kerja
-          </Button>
+          {!isManagerOrKaryawan && (
+            <Button size="sm" className="bg-emerald-700 hover:bg-emerald-800 text-white" onClick={() => setShowModal(true)}>
+              <Plus className="mr-2 h-4 w-4" /> Tambah Hari Kerja
+            </Button>
+          )}
         </div>
       </div>
 

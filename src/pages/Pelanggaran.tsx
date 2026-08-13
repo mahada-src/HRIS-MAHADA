@@ -5,8 +5,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { supabase } from '../lib/supabase';
 import { Employee } from '../types';
 import { Plus, X, Trash2 } from 'lucide-react';
+import { useAuth } from '../lib/AuthContext';
 
 export default function Pelanggaran() {
+  const { employee: currentUser } = useAuth();
+  const role = currentUser?.role || 'Karyawan';
+  const isManagerOrKaryawan = role === 'Manager' || role === 'Karyawan';
   const [data, setData] = useState<any[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,16 +29,30 @@ export default function Pelanggaran() {
   }, []);
 
   const fetchEmployees = async () => {
-    const { data } = await supabase.from('employees').select('id, full_name, employee_code').order('full_name');
+    let query = supabase.from('employees').select('id, full_name, employee_code, department_id').order('full_name');
+    if (role === 'Karyawan') {
+      query = query.eq('id', currentUser?.id);
+    } else if (role === 'Manager') {
+      query = query.eq('department_id', currentUser?.department_id);
+    }
+    const { data } = await query;
     if (data) setEmployees(data);
   };
 
   const fetchData = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from('violations')
-      .select('*, employees(full_name, employee_code)')
+      .select('*, employees!inner(full_name, employee_code, department_id)')
       .order('created_at', { ascending: false });
+      
+    if (role === 'Karyawan') {
+      query = query.eq('employee_id', currentUser?.id);
+    } else if (role === 'Manager') {
+      query = query.eq('employees.department_id', currentUser?.department_id);
+    }
+
+    const { data, error } = await query;
       
     if (data) setData(data);
     setLoading(false);
@@ -80,12 +98,13 @@ export default function Pelanggaran() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-800">Pelanggaran & SP</h1>
-          <p className="text-sm text-slate-500">Kelola riwayat pelanggaran dan Surat Peringatan (SP) karyawan.</p>
+          <h1 className="text-xl font-bold tracking-tight text-emerald-800">Pelanggaran (SP)</h1>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}>
-          {showForm ? <><X className="w-4 h-4 mr-2" /> Batal</> : <><Plus className="w-4 h-4 mr-2" /> Tambah Data</>}
-        </Button>
+        {!isManagerOrKaryawan && (
+          <Button onClick={() => setShowForm(!showForm)} className="bg-emerald-700 hover:bg-emerald-800 text-white">
+            {showForm ? <><X className="w-4 h-4 mr-2" /> Batal</> : <><Plus className="w-4 h-4 mr-2" /> Tambah SP</>}
+          </Button>
+        )}
       </div>
 
       {showForm && (
@@ -147,9 +166,9 @@ export default function Pelanggaran() {
                 <TableHead>Jenis</TableHead>
                 <TableHead>No. Surat</TableHead>
                 <TableHead>Tanggal</TableHead>
-                <TableHead>Keterangan</TableHead>
+                <TableHead>Masa Berlaku</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
+                {!isManagerOrKaryawan && <TableHead className="text-center w-[100px]">Aksi</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -186,11 +205,13 @@ export default function Pelanggaran() {
                         {item.status}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(item.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
+                    {!isManagerOrKaryawan && (
+                      <TableCell className="text-center">
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(item.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}

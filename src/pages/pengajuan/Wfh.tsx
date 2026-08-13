@@ -22,6 +22,9 @@ export default function PengajuanWfh() {
   const [employeeId, setEmployeeId] = useState('');
   const { employee: currentEmployee } = useAuth();
   const isAdmin = currentEmployee?.role === 'HR' || currentEmployee?.role === 'Super Admin';
+  const role = currentEmployee?.role || 'Karyawan';
+  const isManager = role === 'Manager';
+  const isKaryawan = role === 'Karyawan';
 
   useEffect(() => {
     if (currentEmployee && !isAdmin) {
@@ -38,16 +41,30 @@ export default function PengajuanWfh() {
   }, []);
 
   const fetchEmployees = async () => {
-    const { data } = await supabase.from('employees').select('id, full_name, employee_code').order('full_name');
+    let query = supabase.from('employees').select('id, full_name, employee_code, department_id').order('full_name');
+    if (isKaryawan) {
+      query = query.eq('id', currentEmployee?.id);
+    } else if (isManager) {
+      query = query.eq('department_id', currentEmployee?.department_id);
+    }
+    const { data } = await query;
     if (data) setEmployees(data);
   };
 
   const fetchData = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from('wfh_requests')
-      .select('*, employees(full_name, employee_code)')
+      .select('*, employees!inner(full_name, employee_code, department_id)')
       .order('created_at', { ascending: false });
+      
+    if (isKaryawan) {
+      query = query.eq('employee_id', currentEmployee?.id);
+    } else if (isManager) {
+      query = query.eq('employees.department_id', currentEmployee?.department_id);
+    }
+
+    const { data, error } = await query;
       
     if (data) setData(data);
     setLoading(false);
@@ -167,7 +184,7 @@ export default function PengajuanWfh() {
             <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Karyawan</label>
-                {isAdmin ? (
+                {!isKaryawan ? (
                   <select 
                     required
                     value={employeeId} 

@@ -4,8 +4,12 @@ import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Calendar as CalendarIcon } from 'lucide-react';
+import { useAuth } from '../lib/AuthContext';
 
 export default function Dashboard() {
+  const { employee: currentUser } = useAuth();
+  const role = currentUser?.role || 'Karyawan';
+  const isManager = role === 'Manager';
   const [stats, setStats] = useState([
     { title: 'Total Karyawan', value: '-', subtitle: 'Memuat...', subtitleColor: 'text-slate-500' },
     { title: 'Hadir Hari Ini', value: '-', subtitle: 'Memuat...', subtitleColor: 'text-slate-500' },
@@ -21,6 +25,12 @@ export default function Dashboard() {
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [departmentId, setDepartmentId] = useState('all');
   const [departments, setDepartments] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isManager && currentUser?.department_id) {
+      setDepartmentId(currentUser.department_id);
+    }
+  }, [isManager, currentUser]);
 
   const navigate = useNavigate();
 
@@ -175,7 +185,8 @@ export default function Dashboard() {
           <select 
             value={departmentId}
             onChange={e => setDepartmentId(e.target.value)}
-            className="bg-white border border-slate-200 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:border-emerald-500"
+            disabled={isManager}
+            className="bg-transparent text-sm font-medium border-none focus:ring-0 cursor-pointer text-slate-700 disabled:opacity-50"
           >
             <option value="all">Semua Departemen</option>
             {departments.map(d => (

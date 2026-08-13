@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '../components/ui/Card';
 import { supabase } from '../lib/supabase';
 import { Employee } from '../types';
+import { useAuth } from '../lib/AuthContext';
 
 export default function BenefitKaryawan() {
+  const { employee: currentUser } = useAuth();
+  const role = currentUser?.role || 'Karyawan';
+  const isManagerOrKaryawan = role === 'Manager' || role === 'Karyawan';
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -13,10 +17,18 @@ export default function BenefitKaryawan() {
 
   const fetchEmployees = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from('employees')
-      .select('*')
+      .select('*, departments(name)')
       .order('employee_code', { ascending: false });
+      
+    if (role === 'Karyawan') {
+      query = query.eq('id', currentUser?.id);
+    } else if (role === 'Manager') {
+      query = query.eq('department_id', currentUser?.department_id);
+    }
+      
+    const { data, error } = await query;
       
     if (data) setEmployees(data);
     setLoading(false);
@@ -128,7 +140,8 @@ export default function BenefitKaryawan() {
                         <select 
                           value={emp.aksi_umroh || ''} 
                           onChange={(e) => handleUpdate(emp.id, 'aksi_umroh', e.target.value)}
-                          className="w-32 rounded border border-blue-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          disabled={isManagerOrKaryawan}
+                          className="w-32 rounded border border-blue-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-500"
                         >
                           <option value="">- Pilih -</option>
                           <option value="Berangkat">Berangkat</option>
@@ -156,7 +169,8 @@ export default function BenefitKaryawan() {
                         <select 
                           value={emp.aksi_bpjs || ''} 
                           onChange={(e) => handleUpdate(emp.id, 'aksi_bpjs', e.target.value)}
-                          className="w-32 rounded border border-blue-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          disabled={isManagerOrKaryawan}
+                          className="w-32 rounded border border-blue-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-500"
                         >
                           <option value="">- Pilih -</option>
                           <option value="Terdaftar">Terdaftar</option>
@@ -168,12 +182,23 @@ export default function BenefitKaryawan() {
                         <select 
                           value={emp.program_qurban || ''} 
                           onChange={(e) => handleUpdate(emp.id, 'program_qurban', e.target.value)}
-                          className="w-32 rounded border border-blue-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          disabled={isManagerOrKaryawan}
+                          className="w-32 rounded border border-blue-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-500"
                         >
                           <option value="">- Pilih -</option>
                           <option value="Antrian">Antrian</option>
                           <option value="Berqurban">Berqurban</option>
                         </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <input 
+                          type="text"
+                          placeholder="Merek/Tipe..."
+                          value={emp.detail_kendaraan || ''}
+                          onChange={(e) => handleUpdate(emp.id, 'detail_kendaraan', e.target.value)}
+                          disabled={isManagerOrKaryawan}
+                          className="w-32 rounded border border-slate-200 px-2 py-1.5 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-50 disabled:text-slate-500"
+                        />
                       </td>
                     </tr>
                   );

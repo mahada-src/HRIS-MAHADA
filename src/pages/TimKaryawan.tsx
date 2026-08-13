@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { supabase } from '../lib/supabase';
 import { Employee, Department, Position } from '../types';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../lib/AuthContext';
 
 export default function TimKaryawan() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -15,6 +16,9 @@ export default function TimKaryawan() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('Semua');
   const navigate = useNavigate();
+  const { employee: currentUser } = useAuth();
+  const role = currentUser?.role || 'Karyawan';
+  const isManagerOrKaryawan = role === 'Manager' || role === 'Karyawan';
 
   // Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -57,7 +61,7 @@ export default function TimKaryawan() {
 
   const fetchEmployees = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from('employees')
       .select(`
         *,
@@ -65,6 +69,14 @@ export default function TimKaryawan() {
         positions (title)
       `)
       .order('employee_code', { ascending: false });
+
+    if (role === 'Karyawan') {
+      query = query.eq('id', currentUser?.id);
+    } else if (role === 'Manager') {
+      query = query.eq('department_id', currentUser?.department_id);
+    }
+
+    const { data, error } = await query;
     
     if (error) console.error('Error fetching employees:', error);
     else setEmployees(data || []);
@@ -171,19 +183,33 @@ export default function TimKaryawan() {
           <h1 className="text-xl font-bold tracking-tight text-slate-800">Tim Karyawan</h1>
           <p className="text-sm text-slate-500">Kelola data seluruh karyawan perusahaan Anda.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => alert('Fitur Import belum tersedia.')}>
-            <Upload className="mr-2 h-4 w-4" />
-            Import
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => alert('Fitur Export belum tersedia.')}>
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setIsAddModalOpen(true)}>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Tambah Karyawan
-          </Button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Cari nama / NIK..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 min-w-[200px]"
+            />
+          </div>
+          {!isManagerOrKaryawan && (
+            <>
+              <Button variant="outline" className="text-slate-600">
+                <Upload className="w-4 h-4 mr-2" />
+                Import
+              </Button>
+              <Button variant="outline" className="text-slate-600">
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
+              <Button onClick={() => setIsAddModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Tambah Karyawan
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -222,16 +248,6 @@ export default function TimKaryawan() {
             </button>
           </div>
         </div>
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Cari karyawan..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-4 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-          />
-        </div>
       </div>
 
       <Card className="flex flex-1 flex-col overflow-hidden shadow-sm">
@@ -248,67 +264,56 @@ export default function TimKaryawan() {
                 <TableHead>Departemen</TableHead>
                 <TableHead>Jabatan</TableHead>
                 <TableHead>Lama Bekerja</TableHead>
-                <TableHead>Status Karyawan</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
+                <TableHead>Status</TableHead>
+                {!isManagerOrKaryawan && <TableHead className="text-center">Aksi</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-slate-500">Memuat data...</TableCell>
+                  <TableCell colSpan={7} className="text-center py-8 text-slate-500">Memuat data...</TableCell>
                 </TableRow>
               ) : filteredEmployees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-slate-500">Tidak ada data karyawan ditemukan.</TableCell>
+                  <TableCell colSpan={7} className="text-center py-8 text-slate-500">Tidak ada data karyawan ditemukan.</TableCell>
                 </TableRow>
               ) : (
-                filteredEmployees.map((karyawan) => (
-                  <TableRow key={karyawan.id}>
-                    <TableCell className="font-medium text-slate-800">
-                      {karyawan.id_karyawan || karyawan.employee_code || '-'}
-                    </TableCell>
+                filteredEmployees.map((emp) => (
+                  <TableRow key={emp.id}>
+                    <TableCell className="font-medium text-slate-800">{emp.employee_code}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600 text-xs">
-                          {karyawan.full_name.substring(0, 2).toUpperCase()}
+                          {emp.full_name.substring(0, 2).toUpperCase()}
                         </div>
-                        <span className="font-semibold text-slate-800">{karyawan.full_name}</span>
+                        <span className="font-semibold text-slate-800">{emp.full_name}</span>
                       </div>
                     </TableCell>
+                    <TableCell>{/* @ts-ignore */}{emp.departments?.name || '-'}</TableCell>
+                    <TableCell>{/* @ts-ignore */}{emp.positions?.title || '-'}</TableCell>
+                    <TableCell>{calculateLamaBekerja(emp.tgl_tetap || emp.join_date, emp.tgl_probation)}</TableCell>
                     <TableCell>
-                      <span className="inline-flex items-center rounded-md bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/10">
-                        {/* @ts-ignore */}
-                        {karyawan.departments?.name || '-'}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm text-slate-600">{/* @ts-ignore */}{karyawan.positions?.title || '-'}</TableCell>
-                    <TableCell className="text-sm text-slate-600 font-medium">
-                      {/* @ts-ignore */}
-                      {calculateLamaBekerja(karyawan.tgl_tetap || karyawan.join_date, karyawan.tgl_probation)}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                        karyawan.status_karyawan === 'Resign' ? 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/10' :
-                        karyawan.status_karyawan === 'PHK' ? 'bg-red-50 text-red-800 ring-1 ring-inset ring-red-600/10' :
-                        karyawan.status_karyawan === 'Cuti' ? 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/10' :
-                        'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10'
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        emp.status_karyawan === 'Aktif' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
                       }`}>
-                        {karyawan.status_karyawan || 'Aktif'}
+                        {emp.status_karyawan || 'Aktif'}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => navigate('/detail?id=' + karyawan.id)} title="Lihat Detail">
-                          <Eye className="h-4 w-4 text-emerald-600" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => openEditModal(karyawan)} title="Edit">
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(karyawan.id)} title="Hapus">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {!isManagerOrKaryawan && (
+                      <TableCell>
+                        <div className="flex justify-center gap-2">
+                          <Button size="sm" variant="outline" className="text-blue-600 hover:bg-blue-50" onClick={() => navigate(`/detail?id=${emp.id}`)}>
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" className="text-amber-600 hover:bg-amber-50" onClick={() => openEditModal(emp)}>
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50" onClick={() => handleDelete(emp.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}

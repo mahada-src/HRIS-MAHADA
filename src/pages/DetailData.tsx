@@ -21,6 +21,8 @@ export default function DetailData() {
   const id = searchParams.get('id');
   const navigate = useNavigate();
   const { employee: loggedInEmployee } = useAuth();
+  const role = loggedInEmployee?.role || 'Karyawan';
+  const isManagerOrKaryawan = role === 'Manager' || role === 'Karyawan';
   
   // State for List View
   const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
@@ -36,6 +38,10 @@ export default function DetailData() {
   const [benefits, setBenefits] = useState<any[]>([]);
   const [activeRequests, setActiveRequests] = useState<any[]>([]);
 
+  // Master Data
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [positions, setPositions] = useState<any[]>([]);
+
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editData, setEditData] = useState<Partial<Employee>>({});
@@ -47,15 +53,33 @@ export default function DetailData() {
     } else {
       fetchAllEmployees();
     }
+    fetchMasterData();
   }, [id]);
+
+  const fetchMasterData = async () => {
+    const [depRes, posRes] = await Promise.all([
+      supabase.from('departments').select('*'),
+      supabase.from('positions').select('*')
+    ]);
+    if (depRes.data) setDepartments(depRes.data);
+    if (posRes.data) setPositions(posRes.data);
+  };
 
   const fetchAllEmployees = async () => {
     setLoadingList(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('employees')
         .select('*')
         .order('employee_code', { ascending: false });
+        
+      if (role === 'Karyawan') {
+        query = query.eq('id', loggedInEmployee?.id);
+      } else if (role === 'Manager') {
+        query = query.eq('department_id', loggedInEmployee?.department_id);
+      }
+      
+      const { data, error } = await query;
       if (data) setAllEmployees(data);
     } catch (err) {
       console.error(err);
@@ -68,7 +92,7 @@ export default function DetailData() {
     try {
       const { data, error } = await supabase
         .from('employees')
-        .select('*')
+        .select('*, departments(name), positions(title)')
         .eq('id', employeeId)
         .maybeSingle();
       
@@ -237,10 +261,12 @@ export default function DetailData() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-base font-bold">Informasi Karyawan</CardTitle>
-              <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)} className="text-emerald-600 border-emerald-200 hover:bg-emerald-50">
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Data
-              </Button>
+              {!isManagerOrKaryawan && (
+                <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)} className="text-emerald-600 border-emerald-200 hover:bg-emerald-50">
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Data
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="pt-4">
               <div className="flex flex-col items-center text-center space-y-4">
@@ -282,11 +308,11 @@ export default function DetailData() {
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <span className="text-slate-500">Divisi / Dept</span>
-                  <span className="text-slate-800 font-medium">{employee.divisi || /* @ts-ignore */ employee.departments?.name || '-'}</span>
+                  <span className="text-slate-800 font-medium">{/* @ts-ignore */ employee.departments?.name || '-'}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <span className="text-slate-500">Posisi / Jabatan</span>
-                  <span className="text-slate-800 font-medium">{employee.posisi || /* @ts-ignore */ employee.positions?.title || '-'}</span>
+                  <span className="text-slate-800 font-medium">{/* @ts-ignore */ employee.positions?.title || '-'}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <span className="text-slate-500">Status Karyawan</span>
@@ -496,11 +522,29 @@ export default function DetailData() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-slate-700">Divisi / Dept</label>
-                  <input type="text" value={editData.divisi || ''} onChange={e => setEditData({...editData, divisi: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm" />
+                  <select 
+                    value={editData.department_id || ''} 
+                    onChange={e => setEditData({...editData, department_id: e.target.value})} 
+                    className="w-full rounded-md border border-slate-200 p-2 text-sm"
+                  >
+                    <option value="">- Pilih Divisi -</option>
+                    {departments.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-slate-700">Posisi / Jabatan</label>
-                  <input type="text" value={editData.posisi || ''} onChange={e => setEditData({...editData, posisi: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm" />
+                  <select 
+                    value={editData.position_id || ''} 
+                    onChange={e => setEditData({...editData, position_id: e.target.value})} 
+                    className="w-full rounded-md border border-slate-200 p-2 text-sm"
+                  >
+                    <option value="">- Pilih Posisi -</option>
+                    {positions.map(p => (
+                      <option key={p.id} value={p.id}>{p.title}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-slate-700">Status Kepegawaian</label>

@@ -4,8 +4,12 @@ import { Button } from '../components/ui/Button';
 import { supabase } from '../lib/supabase';
 import { Employee } from '../types';
 import { Plus, X, Link as LinkIcon, Car } from 'lucide-react';
+import { useAuth } from '../lib/AuthContext';
 
 export default function IkatanDinas() {
+  const { employee: currentUser } = useAuth();
+  const role = currentUser?.role || 'Karyawan';
+  const isManagerOrKaryawan = role === 'Manager' || role === 'Karyawan';
   const [data, setData] = useState<any[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,16 +30,30 @@ export default function IkatanDinas() {
   }, []);
 
   const fetchEmployees = async () => {
-    const { data } = await supabase.from('employees').select('id, full_name, employee_code').order('full_name');
+    let query = supabase.from('employees').select('id, full_name, employee_code, department_id').order('full_name');
+    if (role === 'Karyawan') {
+      query = query.eq('id', currentUser?.id);
+    } else if (role === 'Manager') {
+      query = query.eq('department_id', currentUser?.department_id);
+    }
+    const { data } = await query;
     if (data) setEmployees(data);
   };
 
   const fetchData = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from('business_trip_bonds')
-      .select('*, employees(full_name, employee_code)')
+      .select('*, employees!inner(full_name, employee_code, department_id)')
       .order('start_date', { ascending: true }); // Process chronologically for clusters
+      
+    if (role === 'Karyawan') {
+      query = query.eq('employee_id', currentUser?.id);
+    } else if (role === 'Manager') {
+      query = query.eq('employees.department_id', currentUser?.department_id);
+    }
+
+    const { data, error } = await query;
       
     if (data) setData(data);
     setLoading(false);
@@ -158,9 +176,11 @@ export default function IkatanDinas() {
         <div>
           <h1 className="text-xl font-bold tracking-tight text-emerald-800">Ikatan & Perjalanan Dinas</h1>
         </div>
-        <Button onClick={() => setShowForm(!showForm)} className="bg-emerald-700 hover:bg-emerald-800 text-white">
-          {showForm ? <><X className="w-4 h-4 mr-2" /> Batal</> : <><Plus className="w-4 h-4 mr-2" /> Tambah Perjalanan</>}
-        </Button>
+        {!isManagerOrKaryawan && (
+          <Button onClick={() => setShowForm(!showForm)} className="bg-emerald-700 hover:bg-emerald-800 text-white">
+            {showForm ? <><X className="w-4 h-4 mr-2" /> Batal</> : <><Plus className="w-4 h-4 mr-2" /> Tambah Perjalanan</>}
+          </Button>
+        )}
       </div>
 
       {showForm && (
@@ -194,7 +214,7 @@ export default function IkatanDinas() {
                   <input required type="number" value={nominal} onChange={e => setNominal(e.target.value)} className="w-full rounded border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" placeholder="1500000" />
                 </div>
               </div>
-              <div className="pt-2">
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <Button type="submit" disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700 text-white w-full md:w-auto">
                   {isSubmitting ? 'Menyimpan...' : 'Simpan Data'}
                 </Button>
