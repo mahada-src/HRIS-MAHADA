@@ -137,9 +137,12 @@ export default function IkatanDinas() {
           endDate.setMonth(endDate.getMonth() + currentCluster.durationMonths);
           currentCluster.bondEndDate = endDate;
         } else {
-          // Cek apakah perjalanan baru ini terjadi SELAMA masa aktif cluster ini berjalan
-          if (tripDate <= currentCluster.bondEndDate) {
-            // Gabungkan
+          // Batas akumulasi adalah 6 bulan dari pendidikan pertama
+          const sixMonthsLimit = new Date(currentCluster.startDate);
+          sixMonthsLimit.setMonth(sixMonthsLimit.getMonth() + 6);
+
+          if (tripDate <= sixMonthsLimit) {
+            // Gabungkan karena masih dalam kurun waktu 6 bulan
             currentCluster.trips.push(trip);
             currentCluster.totalNominal += (parseFloat(trip.nominal) || 0);
             
@@ -151,7 +154,7 @@ export default function IkatanDinas() {
             newEndDate.setMonth(newEndDate.getMonth() + currentCluster.durationMonths);
             currentCluster.bondEndDate = newEndDate;
           } else {
-            // Sudah lewat masa aktif, masukkan cluster lama ke results, buat cluster baru
+            // Lebih dari 6 bulan -> total biaya tidak akumulasi dan masa waktu terpisah
             results.push(currentCluster);
             clusterIndex++;
             
