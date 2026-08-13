@@ -8,6 +8,7 @@ import { Plus, Trash2, X, ExternalLink } from 'lucide-react';
 export default function Administrasi() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [positions, setPositions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Modal State
@@ -16,6 +17,7 @@ export default function Administrasi() {
   const [url, setUrl] = useState('');
   const [category, setCategory] = useState('');
   const [accessRole, setAccessRole] = useState('Semua Karyawan');
+  const [position, setPosition] = useState('Semua Jabatan');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -24,13 +26,15 @@ export default function Administrasi() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [docsRes, catRes] = await Promise.all([
+    const [docsRes, catRes, posRes] = await Promise.all([
       supabase.from('documents').select('*').order('created_at', { ascending: false }),
-      supabase.from('document_categories').select('*').order('name')
+      supabase.from('document_categories').select('*').order('name'),
+      supabase.from('positions').select('title').order('title')
     ]);
     
     if (docsRes.data) setDocuments(docsRes.data);
     if (catRes.data) setCategories(catRes.data);
+    if (posRes.data) setPositions(posRes.data);
     setLoading(false);
   };
 
@@ -42,7 +46,8 @@ export default function Administrasi() {
       title,
       url,
       category,
-      access_role: accessRole
+      access_role: accessRole,
+      position: position
     }]);
 
     setIsSubmitting(false);
@@ -52,6 +57,7 @@ export default function Administrasi() {
       setUrl('');
       setCategory('');
       setAccessRole('Semua Karyawan');
+      setPosition('Semua Jabatan');
       setShowModal(false);
       fetchData();
     } else {
@@ -85,15 +91,16 @@ export default function Administrasi() {
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">JUDUL DOKUMEN</TableHead>
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">KATEGORI ADMINISTRASI</TableHead>
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">HAK AKSES</TableHead>
+                <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">JABATAN</TableHead>
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">LINK GOOGLE DOC</TableHead>
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4 text-center w-24">AKSI</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-slate-100">
               {loading ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
               ) : documents.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-8 text-slate-500">Tidak ada dokumen.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">Tidak ada dokumen.</TableCell></TableRow>
               ) : documents.map(doc => (
                 <TableRow key={doc.id} className="hover:bg-slate-50">
                   <TableCell className="font-medium text-slate-800">{doc.title}</TableCell>
@@ -101,6 +108,11 @@ export default function Administrasi() {
                   <TableCell className="text-slate-600">
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800">
                       {doc.access_role || 'Semua'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-slate-600">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700">
+                      {doc.position || 'Semua Jabatan'}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -158,19 +170,36 @@ export default function Administrasi() {
                   </select>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-slate-700">Akses *</label>
-                  <select 
-                    required
-                    value={accessRole} 
-                    onChange={e => setAccessRole(e.target.value)} 
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all bg-white"
-                  >
-                    <option value="Semua Karyawan">Semua Karyawan</option>
-                    <option value="Super Admin">Super Admin</option>
-                    <option value="HR">HR</option>
-                    <option value="Manager">Manager</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Akses Role *</label>
+                    <select 
+                      required
+                      value={accessRole} 
+                      onChange={e => setAccessRole(e.target.value)} 
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all bg-white"
+                    >
+                      <option value="Semua Karyawan">Semua Karyawan</option>
+                      <option value="Super Admin">Super Admin</option>
+                      <option value="HR">HR</option>
+                      <option value="Manager">Manager</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Jabatan *</label>
+                    <select 
+                      required
+                      value={position} 
+                      onChange={e => setPosition(e.target.value)} 
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all bg-white"
+                    >
+                      <option value="Semua Jabatan">Semua Jabatan</option>
+                      {positions.map((p, i) => (
+                        <option key={i} value={p.title}>{p.title}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">

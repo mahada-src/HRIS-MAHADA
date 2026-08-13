@@ -55,7 +55,7 @@ export default function DetailData() {
       const { data, error } = await supabase
         .from('employees')
         .select('*')
-        .order('full_name', { ascending: true });
+        .order('employee_code', { ascending: false });
       if (data) setAllEmployees(data);
     } catch (err) {
       console.error(err);

@@ -64,7 +64,7 @@ export default function TimKaryawan() {
         departments (name),
         positions (title)
       `)
-      .order('id_karyawan', { ascending: false });
+      .order('employee_code', { ascending: false });
     
     if (error) console.error('Error fetching employees:', error);
     else setEmployees(data || []);

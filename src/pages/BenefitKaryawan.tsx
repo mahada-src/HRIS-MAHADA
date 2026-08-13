@@ -16,7 +16,7 @@ export default function BenefitKaryawan() {
     const { data, error } = await supabase
       .from('employees')
       .select('*')
-      .order('full_name', { ascending: true });
+      .order('employee_code', { ascending: false });
       
     if (data) setEmployees(data);
     setLoading(false);

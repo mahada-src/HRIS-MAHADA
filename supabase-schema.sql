@@ -321,6 +321,7 @@ CREATE TABLE IF NOT EXISTS public.documents (
     url VARCHAR(1024) NOT NULL,
     category VARCHAR(100),
     access_role VARCHAR(100),
+    position VARCHAR(255) DEFAULT 'Semua Jabatan',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
