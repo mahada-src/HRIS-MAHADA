@@ -227,7 +227,7 @@ export default function IkatanDinas() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Kolom Kiri: Riwayat */}
-        <Card className="border-0 shadow-sm rounded-xl overflow-hidden border-t-4 border-t-blue-500 bg-white flex flex-col h-[600px]">
+        <Card className="border-0 shadow-sm rounded-xl overflow-hidden border-t-4 border-t-blue-500 bg-white flex flex-col h-[450px]">
           <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
             <div className="flex items-center text-sm font-semibold text-slate-700">
               <Car className="w-4 h-4 mr-2 text-blue-500" />
@@ -283,7 +283,7 @@ export default function IkatanDinas() {
         </Card>
 
         {/* Kolom Kanan: Status Ikatan */}
-        <Card className="border-0 shadow-sm rounded-xl overflow-hidden border-t-4 border-t-amber-400 bg-white flex flex-col h-[600px]">
+        <Card className="border-0 shadow-sm rounded-xl overflow-hidden border-t-4 border-t-amber-400 bg-white flex flex-col h-[450px]">
           <div className="p-4 border-b border-slate-100 flex items-center bg-white shrink-0 text-sm font-semibold text-slate-700">
             <LinkIcon className="w-4 h-4 mr-2 text-amber-500" />
             Status Masa Ikatan Dinas

@@ -139,6 +139,8 @@ export default function PengajuanLembur() {
   };
 
   const handleUpdateEfektif = async (id: string) => {
+    if (isKaryawan) return; // Karyawan tidak boleh edit
+
     const { error } = await supabase.from('overtime_requests').update({
       menit_efektif: parseInt(efektifMins) || null
     }).eq('id', id);
@@ -327,7 +329,7 @@ export default function PengajuanLembur() {
                       ) : (
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-slate-700">{item.menit_efektif !== null ? item.menit_efektif : '-'}</span>
-                          {item.status === 'Disetujui' && (
+                          {item.status === 'Disetujui' && !isKaryawan && (
                             <button onClick={() => { setEditEfektifId(item.id); setEfektifMins(item.menit_efektif?.toString() || ''); }} className="text-slate-400 hover:text-emerald-600">
                               <Edit2 className="w-3 h-3" />
                             </button>

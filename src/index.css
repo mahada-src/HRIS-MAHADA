@@ -1,1 +1,5 @@
 @import "tailwindcss";
+
+html {
+  font-size: 14px; /* Default browser is 16px. Setting to 14px shrinks all Tailwind rem-based units by ~12.5% */
+}
