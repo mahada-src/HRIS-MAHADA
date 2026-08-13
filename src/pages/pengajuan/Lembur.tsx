@@ -108,6 +108,10 @@ export default function PengajuanLembur() {
     const matchMonth = (itemDate.getMonth() + 1).toString().padStart(2, '0') === filterMonth;
     const matchYear = itemDate.getFullYear().toString() === filterYear;
     return matchName && matchMonth && matchYear;
+  }).sort((a, b) => {
+    const dateA = new Date(a.date || a.start_date || 0).getTime();
+    const dateB = new Date(b.date || b.start_date || 0).getTime();
+    return dateB - dateA;
   });
 
   return (

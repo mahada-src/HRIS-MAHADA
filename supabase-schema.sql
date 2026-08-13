@@ -313,3 +313,19 @@ BEGIN
   END LOOP;
 END $$;
 
+
+-- 17. Documents (Administrasi)
+CREATE TABLE IF NOT EXISTS public.documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL,
+    url VARCHAR(1024) NOT NULL,
+    category VARCHAR(100),
+    access_role VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TRIGGER update_documents_modtime BEFORE UPDATE ON public.documents FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read documents" ON public.documents FOR SELECT USING (true);
+CREATE POLICY "Admin write documents" ON public.documents FOR ALL USING (get_user_role() IN ('Super Admin', 'HR'));

@@ -32,7 +32,7 @@ export default function RekapAbsensi() {
     setLoading(true);
     
     // Fetch Employees
-    const { data: empData } = await supabase.from('employees').select('id, full_name, employee_code').order('full_name');
+    const { data: empData } = await supabase.from('employees').select('id, full_name, employee_code').order('employee_code', { ascending: false });
     if (empData) setEmployees(empData);
     
     // Calculate period: 21st of prev month to 20th of current month
@@ -219,19 +219,20 @@ export default function RekapAbsensi() {
                 <TableHead className="px-4 py-3 font-bold text-amber-500 uppercase text-[10px] text-center">TELAT</TableHead>
                 <TableHead className="px-4 py-3 font-bold text-emerald-600 uppercase text-[10px] text-center">WFH</TableHead>
                 <TableHead className="px-4 py-3 font-bold text-red-500 uppercase text-[10px] text-center">SAKIT</TableHead>
-                <TableHead className="px-4 py-3 font-bold text-blue-400 uppercase text-[10px] text-center">IZIN</TableHead>
+                <TableHead className="px-4 py-3 font-bold text-blue-400 uppercase text-[10px] text-center">IZIN FULL</TableHead>
                 <TableHead className="px-4 py-3 font-bold text-slate-500 uppercase text-[10px] text-center">IZIN 1/2</TableHead>
+                <TableHead className="px-4 py-3 font-bold text-orange-500 uppercase text-[10px] text-center">IZIN 1/3</TableHead>
                 <TableHead className="px-4 py-3 font-bold text-purple-500 uppercase text-[10px] text-center">CUTI</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-slate-100">
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8 text-slate-500">Memuat data...</TableCell>
+                  <TableCell colSpan={11} className="text-center py-8 text-slate-500">Memuat data...</TableCell>
                 </TableRow>
               ) : summaryData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8 text-slate-500">Tidak ada data absensi.</TableCell>
+                  <TableCell colSpan={11} className="text-center py-8 text-slate-500">Tidak ada data absensi.</TableCell>
                 </TableRow>
               ) : (
                 summaryData.map((row) => (
@@ -252,6 +253,7 @@ export default function RekapAbsensi() {
                     <TableCell className="px-4 py-3 text-center font-bold text-red-500">{row.sakit}</TableCell>
                     <TableCell className="px-4 py-3 text-center font-bold text-blue-400">{row.izin}</TableCell>
                     <TableCell className="px-4 py-3 text-center font-bold text-slate-500">{row.izinSetengah}</TableCell>
+                    <TableCell className="px-4 py-3 text-center font-bold text-orange-500">{row.izinSepertiga}</TableCell>
                     <TableCell className="px-4 py-3 text-center font-bold text-purple-500">{row.cuti}</TableCell>
                   </TableRow>
                 ))

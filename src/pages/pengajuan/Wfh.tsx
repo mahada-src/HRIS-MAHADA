@@ -101,10 +101,28 @@ export default function PengajuanWfh() {
 
   const filteredData = data.filter(item => {
     const matchName = item.employees?.full_name?.toLowerCase().includes(searchName.toLowerCase());
-    const itemDate = new Date(item.date);
-    const matchMonth = (itemDate.getMonth() + 1).toString().padStart(2, '0') === filterMonth;
-    const matchYear = itemDate.getFullYear().toString() === filterYear;
-    return matchName && matchMonth && matchYear;
+    
+    const m = parseInt(filterMonth);
+    const y = parseInt(filterYear);
+    
+    let prevMonth = m - 1;
+    let prevYear = y;
+    if (prevMonth === 0) {
+      prevMonth = 12;
+      prevYear -= 1;
+    }
+    
+    const startDateStr = `${prevYear}-${prevMonth.toString().padStart(2, '0')}-21`;
+    const endDateStr = `${y}-${m.toString().padStart(2, '0')}-20`;
+    
+    const dateField = item.date || item.start_date;
+    const isWithinPeriod = dateField >= startDateStr && dateField <= endDateStr;
+
+    return matchName && isWithinPeriod;
+  }).sort((a, b) => {
+    const dateA = new Date(a.date || a.start_date || 0).getTime();
+    const dateB = new Date(b.date || b.start_date || 0).getTime();
+    return dateB - dateA;
   });
 
   return (
