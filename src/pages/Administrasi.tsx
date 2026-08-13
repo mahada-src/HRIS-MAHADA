@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
 import { supabase } from '../lib/supabase';
-import { Plus, Trash2, X, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, X, ExternalLink, Edit2 } from 'lucide-react';
 
 export default function Administrasi() {
   const [documents, setDocuments] = useState<any[]>([]);
@@ -19,6 +19,7 @@ export default function Administrasi() {
   const [accessRole, setAccessRole] = useState('Semua Karyawan');
   const [position, setPosition] = useState('Semua Jabatan');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -42,13 +43,26 @@ export default function Administrasi() {
     e.preventDefault();
     setIsSubmitting(true);
     
-    const { error } = await supabase.from('documents').insert([{ 
-      title,
-      url,
-      category,
-      access_role: accessRole,
-      position: position
-    }]);
+    let error;
+    if (editId) {
+      const res = await supabase.from('documents').update({
+        title,
+        url,
+        category,
+        access_role: accessRole,
+        position: position
+      }).eq('id', editId);
+      error = res.error;
+    } else {
+      const res = await supabase.from('documents').insert([{ 
+        title,
+        url,
+        category,
+        access_role: accessRole,
+        position: position
+      }]);
+      error = res.error;
+    }
 
     setIsSubmitting(false);
 
@@ -58,11 +72,22 @@ export default function Administrasi() {
       setCategory('');
       setAccessRole('Semua Karyawan');
       setPosition('Semua Jabatan');
+      setEditId(null);
       setShowModal(false);
       fetchData();
     } else {
-      alert("Gagal menambahkan dokumen: " + error.message);
+      alert("Gagal menyimpan dokumen: " + error.message);
     }
+  };
+
+  const openEditModal = (doc: any) => {
+    setEditId(doc.id);
+    setTitle(doc.title);
+    setUrl(doc.url);
+    setCategory(doc.category || '');
+    setAccessRole(doc.access_role || 'Semua Karyawan');
+    setPosition(doc.position || 'Semua Jabatan');
+    setShowModal(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -78,7 +103,15 @@ export default function Administrasi() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-emerald-800">Administrasi Dokumen</h1>
         </div>
-        <Button onClick={() => setShowModal(true)} className="bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm">
+        <Button onClick={() => {
+          setEditId(null);
+          setTitle('');
+          setUrl('');
+          setCategory('');
+          setAccessRole('Semua Karyawan');
+          setPosition('Semua Jabatan');
+          setShowModal(true);
+        }} className="bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm">
           <Plus className="w-4 h-4 mr-2" /> Tambah Dokumen
         </Button>
       </div>
@@ -122,9 +155,14 @@ export default function Administrasi() {
                     </a>
                   </TableCell>
                   <TableCell className="text-center">
-                    <Button size="sm" variant="outline" className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 p-2 h-auto" onClick={() => handleDelete(doc.id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <div className="flex justify-center gap-2">
+                      <Button size="sm" variant="outline" className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 p-2 h-auto" onClick={() => openEditModal(doc)}>
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 p-2 h-auto" onClick={() => handleDelete(doc.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -138,7 +176,7 @@ export default function Administrasi() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <Card className="w-full max-w-md border-0 shadow-2xl bg-white rounded-xl">
             <CardHeader className="border-b border-slate-100 pb-4 flex flex-row justify-between items-center">
-              <CardTitle className="text-xl font-bold text-emerald-800">Form Administrasi</CardTitle>
+              <CardTitle className="text-xl font-bold text-emerald-800">{editId ? 'Edit Dokumen' : 'Form Administrasi'}</CardTitle>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
               </button>
@@ -219,7 +257,7 @@ export default function Administrasi() {
                     Batal
                   </Button>
                   <Button type="submit" disabled={isSubmitting} className="bg-emerald-700 hover:bg-emerald-800 text-white font-medium shadow-sm">
-                    {isSubmitting ? 'Menyimpan...' : 'Tambahkan Data'}
+                    {isSubmitting ? 'Menyimpan...' : (editId ? 'Simpan Perubahan' : 'Tambahkan Data')}
                   </Button>
                 </div>
               </form>

@@ -14,7 +14,7 @@ export default function TimKaryawan() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState('Semua');
+  const [filterStatus, setFilterStatus] = useState('Aktif');
   const navigate = useNavigate();
   const { employee: currentUser } = useAuth();
   const role = currentUser?.role || 'Karyawan';
@@ -262,7 +262,7 @@ export default function TimKaryawan() {
                 <TableHead>Departemen</TableHead>
                 <TableHead>Jabatan</TableHead>
                 <TableHead>Lama Bekerja</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Status Kepegawaian</TableHead>
                 {!isManagerOrKaryawan && <TableHead className="text-center">Aksi</TableHead>}
               </TableRow>
             </TableHeader>
@@ -291,10 +291,8 @@ export default function TimKaryawan() {
                     <TableCell>{/* @ts-ignore */}{emp.positions?.title || '-'}</TableCell>
                     <TableCell>{calculateLamaBekerja(emp.tgl_tetap || emp.join_date, emp.tgl_probation)}</TableCell>
                     <TableCell>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        emp.status_karyawan === 'Aktif' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {emp.status_karyawan || 'Aktif'}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200`}>
+                        {emp.employment_status || 'Karyawan Tetap'}
                       </span>
                     </TableCell>
                     {!isManagerOrKaryawan && (

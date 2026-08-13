@@ -27,6 +27,7 @@ export default function DetailData() {
   // State for List View
   const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
   const [loadingList, setLoadingList] = useState(false);
+  const [employmentFilter, setEmploymentFilter] = useState('Semua');
 
   // State for Detail View
   const [employee, setEmployee] = useState<Employee | null>(null);
@@ -164,6 +165,12 @@ export default function DetailData() {
   // LIST VIEW
   // -----------------------------------------------------------
   if (!id) {
+    const activeEmployees = allEmployees.filter(emp => emp.status_karyawan === 'Aktif' || !emp.status_karyawan);
+    const filteredEmployees = activeEmployees.filter(emp => {
+      if (employmentFilter === 'Semua') return true;
+      return emp.employment_status === employmentFilter;
+    });
+
     return (
       <div className="space-y-6 max-w-6xl mx-auto pb-10">
         <div>
@@ -171,6 +178,20 @@ export default function DetailData() {
           <p className="text-sm text-slate-500">Pilih karyawan di bawah ini untuk melihat detail lengkap profil dan riwayat mereka.</p>
         </div>
         
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex rounded-lg border border-slate-200 overflow-x-auto w-full">
+            {['Semua', 'Karyawan Tetap', 'Internship', 'Kontrak', 'Freelance', 'Probation'].map(status => (
+              <button 
+                key={status}
+                className={`px-4 py-2 text-sm font-semibold whitespace-nowrap border-r border-slate-200 last:border-r-0 hover:bg-slate-50 transition-colors ${employmentFilter === status ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
+                onClick={() => setEmploymentFilter(status)}
+              >
+                {status}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <Card>
           <CardContent className="p-0">
             {loadingList ? (
@@ -189,14 +210,14 @@ export default function DetailData() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {allEmployees.length === 0 ? (
+                    {filteredEmployees.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-8 text-slate-500">
                           Tidak ada data karyawan ditemukan.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      allEmployees.map((emp) => (
+                      filteredEmployees.map((emp) => (
                         <TableRow key={emp.id} className="cursor-pointer hover:bg-slate-50" onClick={() => navigate('/detail?id=' + emp.id)}>
                           <TableCell className="font-medium text-slate-800">
                             {emp.id_karyawan || emp.employee_code || '-'}
