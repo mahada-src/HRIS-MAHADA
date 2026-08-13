@@ -190,16 +190,6 @@ export default function BenefitKaryawan() {
                           <option value="Berqurban">Berqurban</option>
                         </select>
                       </td>
-                      <td className="px-4 py-3">
-                        <input 
-                          type="text"
-                          placeholder="Merek/Tipe..."
-                          value={emp.detail_kendaraan || ''}
-                          onChange={(e) => handleUpdate(emp.id, 'detail_kendaraan', e.target.value)}
-                          disabled={isManagerOrKaryawan}
-                          className="w-32 rounded border border-slate-200 px-2 py-1.5 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-50 disabled:text-slate-500"
-                        />
-                      </td>
                     </tr>
                   );
                 })
