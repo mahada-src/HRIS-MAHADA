@@ -55,15 +55,23 @@ export default function Dashboard() {
     if (departmentId !== 'all') {
       empQuery = empQuery.eq('department_id', departmentId);
     }
-    // Tanggal untuk filter chart
-    const startDate = `${year}-${month.padStart(2, '0')}-01`;
-    const nextMonth = parseInt(month) === 12 ? 1 : parseInt(month) + 1;
-    const nextYear = parseInt(month) === 12 ? parseInt(year) + 1 : parseInt(year);
-    const endDate = `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`;
+    // Tanggal untuk filter chart (Periode 21 bulan sebelumnya sd 20 bulan ini)
+    const m = parseInt(month);
+    const y = parseInt(year);
+    
+    let prevMonth = m - 1;
+    let prevYear = y;
+    if (prevMonth === 0) {
+      prevMonth = 12;
+      prevYear -= 1;
+    }
+    
+    const startDate = `${prevYear}-${prevMonth.toString().padStart(2, '0')}-21`;
+    const endDate = `${y}-${month.padStart(2, '0')}-20`;
 
     // Hadir & Terlambat hari ini
     const today = new Date().toISOString().split('T')[0];
-    let attQuery = supabase.from('attendance').select('status, date, employees!inner(department_id)').gte('date', startDate).lt('date', endDate);
+    let attQuery = supabase.from('attendance').select('status, date, employees!inner(department_id)').gte('date', startDate).lte('date', endDate);
     if (departmentId !== 'all') {
       attQuery = attQuery.eq('employees.department_id', departmentId);
     }

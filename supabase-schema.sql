@@ -133,6 +133,7 @@ CREATE TABLE IF NOT EXISTS public.overtime_requests (
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
     target_work TEXT NOT NULL,
+    menit_efektif INTEGER,
     status VARCHAR(50) DEFAULT 'Pending',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL

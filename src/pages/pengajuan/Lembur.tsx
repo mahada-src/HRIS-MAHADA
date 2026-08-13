@@ -5,7 +5,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { supabase } from '../../lib/supabase';
 import { Employee } from '../../types';
 import { useAuth } from '../../lib/AuthContext';
-import { Plus, X, Check, XCircle } from 'lucide-react';
+import { Plus, X, Check, XCircle, Edit2, Eye } from 'lucide-react';
+
+const calculateDuration = (start: string, end: string) => {
+  if (!start || !end) return 0;
+  const [h1, m1] = start.split(':').map(Number);
+  const [h2, m2] = end.split(':').map(Number);
+  const totalMins1 = h1 * 60 + m1;
+  let totalMins2 = h2 * 60 + m2;
+  if (totalMins2 < totalMins1) totalMins2 += 24 * 60; // cross midnight
+  return totalMins2 - totalMins1;
+};
 
 export default function PengajuanLembur() {
   const [data, setData] = useState<any[]>([]);
@@ -25,6 +35,14 @@ export default function PengajuanLembur() {
   const role = currentEmployee?.role || 'Karyawan';
   const isManager = role === 'Manager';
   const isKaryawan = role === 'Karyawan';
+
+  // Preview Pekerjaan Modal
+  const [showWorkModal, setShowWorkModal] = useState(false);
+  const [selectedWork, setSelectedWork] = useState('');
+
+  // Edit Menit Efektif State
+  const [editEfektifId, setEditEfektifId] = useState<string | null>(null);
+  const [efektifMins, setEfektifMins] = useState<string>('');
 
   useEffect(() => {
     if (currentEmployee && !isAdmin) {
@@ -115,7 +133,21 @@ export default function PengajuanLembur() {
           }]);
         }
       }
+      if (notifError) console.error(notifError);
       fetchData();
+    }
+  };
+
+  const handleUpdateEfektif = async (id: string) => {
+    const { error } = await supabase.from('overtime_requests').update({
+      menit_efektif: parseInt(efektifMins) || null
+    }).eq('id', id);
+
+    if (!error) {
+      setEditEfektifId(null);
+      fetchData();
+    } else {
+      alert("Gagal memperbarui menit efektif: " + error.message);
     }
   };
 
@@ -230,7 +262,9 @@ export default function PengajuanLembur() {
                 <TableHead>Tanggal</TableHead>
                 <TableHead>Mulai</TableHead>
                 <TableHead>Selesai</TableHead>
+                <TableHead>Durasi (Mnt)</TableHead>
                 <TableHead>Pekerjaan</TableHead>
+                <TableHead>Menit Efektif</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
@@ -262,9 +296,46 @@ export default function PengajuanLembur() {
                     </TableCell>
                     
                     <TableCell>
-                      {item.target_work}
+                      <span className="font-semibold text-slate-700">{calculateDuration(item.start_time, item.end_time)}</span>
+                    </TableCell>
+
+                    <TableCell className="max-w-[200px]">
+                      <div className="truncate whitespace-nowrap overflow-hidden text-sm text-slate-600">
+                        {item.target_work}
+                      </div>
+                      <button onClick={() => { setSelectedWork(item.target_work); setShowWorkModal(true); }} className="text-[10px] text-emerald-600 font-medium mt-0.5 hover:underline flex items-center">
+                        <Eye className="w-3 h-3 mr-1" /> Preview
+                      </button>
                     </TableCell>
                     
+                    <TableCell>
+                      {editEfektifId === item.id ? (
+                        <div className="flex items-center gap-1">
+                          <input 
+                            type="number" 
+                            className="w-16 px-2 py-1 text-xs border border-emerald-300 rounded focus:outline-none" 
+                            value={efektifMins} 
+                            onChange={(e) => setEfektifMins(e.target.value)} 
+                          />
+                          <button onClick={() => handleUpdateEfektif(item.id)} className="text-emerald-600 hover:text-emerald-700">
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => setEditEfektifId(null)} className="text-red-500 hover:text-red-600">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-slate-700">{item.menit_efektif !== null ? item.menit_efektif : '-'}</span>
+                          {item.status === 'Disetujui' && (
+                            <button onClick={() => { setEditEfektifId(item.id); setEfektifMins(item.menit_efektif?.toString() || ''); }} className="text-slate-400 hover:text-emerald-600">
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </TableCell>
+
                     <TableCell>
                       <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
                         item.status === 'Disetujui' ? 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/10' :
@@ -275,11 +346,13 @@ export default function PengajuanLembur() {
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      {item.status === 'Menunggu Persetujuan' && (isAdmin || currentEmployee?.role === 'Manager') && (
+                      {item.status === 'Menunggu Persetujuan' && (isAdmin || currentEmployee?.role === 'Manager') ? (
                         <div className="flex justify-end gap-2">
                           <Button size="sm" variant="outline" className="text-emerald-600 hover:text-emerald-700 border-emerald-200" onClick={() => handleUpdateStatus(item.id, 'Disetujui', item.employee_id, item.date)}><Check className="w-4 h-4" /></Button>
                           <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 border-red-200" onClick={() => handleUpdateStatus(item.id, 'Ditolak', item.employee_id, item.date)}><XCircle className="w-4 h-4" /></Button>
                         </div>
+                      ) : (
+                        <span className="text-slate-400 text-xs">-</span>
                       )}
                     </TableCell>
                   </TableRow>
@@ -289,6 +362,25 @@ export default function PengajuanLembur() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Modal Preview Pekerjaan */}
+      {showWorkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="w-full max-w-md border-0 shadow-2xl bg-white rounded-xl">
+            <CardHeader className="border-b border-slate-100 pb-4 flex flex-row justify-between items-center">
+              <CardTitle className="text-lg font-bold text-slate-800">Detail Pekerjaan Lembur</CardTitle>
+              <button onClick={() => setShowWorkModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="whitespace-pre-wrap text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-100">
+                {selectedWork}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
