@@ -142,9 +142,11 @@ export default function DetailData() {
     if (!employee?.id) return;
     setIsSaving(true);
     try {
+      const { departments, positions, ...updatePayload } = editData;
+      
       const { error } = await supabase
         .from('employees')
-        .update(editData)
+        .update(updatePayload)
         .eq('id', employee.id);
       
       if (error) throw error;
