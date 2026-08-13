@@ -94,50 +94,80 @@ export default function IkatanDinas() {
   const clusteredBonds = useMemo(() => {
     // Group by employee
     const byEmp: Record<string, any[]> = {};
-    data.forEach(trip => {
+    
+    // Urutkan berdasarkan tanggal terlama ke terbaru
+    const sortedData = [...data].sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+
+    sortedData.forEach(trip => {
       if (!byEmp[trip.employee_id]) byEmp[trip.employee_id] = [];
       byEmp[trip.employee_id].push(trip);
     });
 
     const results: any[] = [];
 
+    const getDurationMonths = (nominal: number) => {
+      if (nominal < 1000000) return 6;
+      if (nominal < 3000000) return 12;
+      if (nominal < 10000000) return 24;
+      if (nominal < 20000000) return 36;
+      return 48;
+    };
+
     Object.keys(byEmp).forEach(empId => {
       const trips = byEmp[empId];
       let currentCluster: any = null;
+      let clusterIndex = 1;
 
       trips.forEach(trip => {
         const tripDate = new Date(trip.start_date);
         
         if (!currentCluster) {
+          const nominal = parseFloat(trip.nominal) || 0;
           currentCluster = { 
+            id: `${empId}-${clusterIndex}`,
             employee: trip.employees,
             trips: [trip], 
             startDate: tripDate, 
-            endDate: tripDate, 
-            totalNominal: parseFloat(trip.nominal) || 0 
+            totalNominal: nominal,
+            durationMonths: getDurationMonths(nominal),
+            periodName: `Periode ${clusterIndex}`
           };
+          
+          const endDate = new Date(currentCluster.startDate);
+          endDate.setMonth(endDate.getMonth() + currentCluster.durationMonths);
+          currentCluster.bondEndDate = endDate;
         } else {
-          // Calculate 6 months from first trip
-          const sixMonthsLimit = new Date(currentCluster.startDate);
-          sixMonthsLimit.setMonth(sixMonthsLimit.getMonth() + 6);
-
-          if (tripDate <= sixMonthsLimit) {
-            // Add to current cluster
+          // Cek apakah perjalanan baru ini terjadi SELAMA masa aktif cluster ini berjalan
+          if (tripDate <= currentCluster.bondEndDate) {
+            // Gabungkan
             currentCluster.trips.push(trip);
             currentCluster.totalNominal += (parseFloat(trip.nominal) || 0);
-            if (tripDate > currentCluster.endDate) {
-              currentCluster.endDate = tripDate;
-            }
+            
+            // Hitung ulang masa aktif berdasarkan nominal terbaru
+            currentCluster.durationMonths = getDurationMonths(currentCluster.totalNominal);
+            
+            // Tanggal berakhir SELALU dihitung dari tanggal perjalanan PERTAMA di cluster ini
+            const newEndDate = new Date(currentCluster.startDate);
+            newEndDate.setMonth(newEndDate.getMonth() + currentCluster.durationMonths);
+            currentCluster.bondEndDate = newEndDate;
           } else {
-            // Finalize and start new
+            // Sudah lewat masa aktif, masukkan cluster lama ke results, buat cluster baru
             results.push(currentCluster);
+            clusterIndex++;
+            
+            const nominal = parseFloat(trip.nominal) || 0;
             currentCluster = { 
+              id: `${empId}-${clusterIndex}`,
               employee: trip.employees,
               trips: [trip], 
               startDate: tripDate, 
-              endDate: tripDate, 
-              totalNominal: parseFloat(trip.nominal) || 0 
+              totalNominal: nominal,
+              durationMonths: getDurationMonths(nominal),
+              periodName: `Periode ${clusterIndex}`
             };
+            const endDate = new Date(currentCluster.startDate);
+            endDate.setMonth(endDate.getMonth() + currentCluster.durationMonths);
+            currentCluster.bondEndDate = endDate;
           }
         }
       });
@@ -147,22 +177,9 @@ export default function IkatanDinas() {
       }
     });
 
-    // Calculate Durations and End Dates
+    const today = new Date();
     results.forEach(c => {
-      let durationMonths = 0;
-      if (c.totalNominal < 1000000) durationMonths = 6;
-      else if (c.totalNominal < 3000000) durationMonths = 12;
-      else if (c.totalNominal < 10000000) durationMonths = 24;
-      else if (c.totalNominal < 20000000) durationMonths = 36;
-      else durationMonths = 48;
-
-      c.durationMonths = durationMonths;
-      const bondEndDate = new Date(c.endDate);
-      bondEndDate.setMonth(bondEndDate.getMonth() + durationMonths);
-      c.bondEndDate = bondEndDate;
-      
-      const today = new Date();
-      c.isActive = bondEndDate > today;
+      c.isActive = c.bondEndDate > today;
     });
 
     return results.sort((a, b) => b.bondEndDate.getTime() - a.bondEndDate.getTime());
@@ -227,7 +244,7 @@ export default function IkatanDinas() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Kolom Kiri: Riwayat */}
-        <Card className="border-0 shadow-sm rounded-xl overflow-hidden border-t-4 border-t-blue-500 bg-white flex flex-col h-[450px]">
+        <Card className="border-0 shadow-sm rounded-xl overflow-hidden border-t-4 border-t-blue-500 bg-white flex flex-col h-[550px]">
           <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
             <div className="flex items-center text-sm font-semibold text-slate-700">
               <Car className="w-4 h-4 mr-2 text-blue-500" />
@@ -283,7 +300,7 @@ export default function IkatanDinas() {
         </Card>
 
         {/* Kolom Kanan: Status Ikatan */}
-        <Card className="border-0 shadow-sm rounded-xl overflow-hidden border-t-4 border-t-amber-400 bg-white flex flex-col h-[450px]">
+        <Card className="border-0 shadow-sm rounded-xl overflow-hidden border-t-4 border-t-amber-400 bg-white flex flex-col h-[550px]">
           <div className="p-4 border-b border-slate-100 flex items-center bg-white shrink-0 text-sm font-semibold text-slate-700">
             <LinkIcon className="w-4 h-4 mr-2 text-amber-500" />
             Status Masa Ikatan Dinas
@@ -306,7 +323,10 @@ export default function IkatanDinas() {
                   .map((cluster, idx) => (
                     <tr key={idx} className="hover:bg-slate-50/50">
                       <td className="px-4 py-4">
-                        <div className="font-semibold text-slate-800">{cluster.employee?.full_name || 'Unknown'}</div>
+                        <div className="font-semibold text-slate-800">
+                          {cluster.employee?.full_name || 'Unknown'} 
+                          <span className="ml-2 text-[10px] font-normal text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">{cluster.periodName}</span>
+                        </div>
                         <div className="text-xs text-slate-500">{cluster.employee?.employee_code}</div>
                       </td>
                       <td className="px-4 py-4 text-right font-bold text-slate-800">
