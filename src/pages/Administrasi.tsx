@@ -7,6 +7,7 @@ import { Plus, Trash2, X, ExternalLink } from 'lucide-react';
 
 export default function Administrasi() {
   const [documents, setDocuments] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Modal State
@@ -18,17 +19,18 @@ export default function Administrasi() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchDocuments();
+    fetchData();
   }, []);
 
-  const fetchDocuments = async () => {
+  const fetchData = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('documents')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const [docsRes, catRes] = await Promise.all([
+      supabase.from('documents').select('*').order('created_at', { ascending: false }),
+      supabase.from('document_categories').select('*').order('name')
+    ]);
     
-    if (data) setDocuments(data);
+    if (docsRes.data) setDocuments(docsRes.data);
+    if (catRes.data) setCategories(catRes.data);
     setLoading(false);
   };
 
@@ -51,7 +53,7 @@ export default function Administrasi() {
       setCategory('');
       setAccessRole('Semua Karyawan');
       setShowModal(false);
-      fetchDocuments();
+      fetchData();
     } else {
       alert("Gagal menambahkan dokumen: " + error.message);
     }
@@ -60,7 +62,7 @@ export default function Administrasi() {
   const handleDelete = async (id: string) => {
     if (window.confirm('Yakin ingin menghapus dokumen ini?')) {
       const { error } = await supabase.from('documents').delete().eq('id', id);
-      if (!error) fetchDocuments();
+      if (!error) fetchData();
     }
   };
 
@@ -81,7 +83,7 @@ export default function Administrasi() {
             <TableHeader className="bg-[#cbf5e6]">
               <TableRow className="border-b-0 hover:bg-[#cbf5e6]">
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">JUDUL DOKUMEN</TableHead>
-                <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">KATEGORI</TableHead>
+                <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">KATEGORI ADMINISTRASI</TableHead>
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">HAK AKSES</TableHead>
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">LINK GOOGLE DOC</TableHead>
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4 text-center w-24">AKSI</TableHead>
@@ -143,14 +145,17 @@ export default function Administrasi() {
                 </div>
                 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-slate-700">Kategori</label>
-                  <input 
-                    type="text" 
-                    value={category} 
-                    onChange={e => setCategory(e.target.value)} 
-                    placeholder="Contoh: SOP, Peraturan, Panduan"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all"
-                  />
+                  <label className="text-sm font-semibold text-slate-700">Kategori Administrasi</label>
+                  <select
+                    value={category}
+                    onChange={e => setCategory(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all bg-white"
+                  >
+                    <option value="">-- Pilih Kategori --</option>
+                    {categories.map(c => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="space-y-1.5">

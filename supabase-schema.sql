@@ -329,3 +329,16 @@ CREATE TRIGGER update_documents_modtime BEFORE UPDATE ON public.documents FOR EA
 ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read documents" ON public.documents FOR SELECT USING (true);
 CREATE POLICY "Admin write documents" ON public.documents FOR ALL USING (get_user_role() IN ('Super Admin', 'HR'));
+
+-- 18. Document Categories
+CREATE TABLE IF NOT EXISTS public.document_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TRIGGER update_document_categories_modtime BEFORE UPDATE ON public.document_categories FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+ALTER TABLE public.document_categories ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read doc categories" ON public.document_categories FOR SELECT USING (true);
+CREATE POLICY "Admin write doc categories" ON public.document_categories FOR ALL USING (get_user_role() IN ('Super Admin', 'HR'));
