@@ -19,6 +19,8 @@ export default function Dashboard() {
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
   const [deptData, setDeptData] = useState<any[]>([]);
+  const [probationEvaluations, setProbationEvaluations] = useState<any[]>([]);
+  const [internshipEvaluations, setInternshipEvaluations] = useState<any[]>([]);
   
   // Filter state
   const [month, setMonth] = useState((new Date().getMonth() + 1).toString());
@@ -139,6 +141,41 @@ export default function Dashboard() {
     ]);
 
     setRecentRequests(allPending.slice(0, 10));
+
+    // Evaluasi Probation & Internship
+    let evalQuery = supabase.from('employees').select('id, full_name, employee_code, tgl_probation, employment_status, departments(name), positions(title)').in('employment_status', ['Probation', 'Internship', 'Kontrak']);
+    if (departmentId !== 'all') {
+      evalQuery = evalQuery.eq('department_id', departmentId);
+    }
+    const { data: evalEmps } = await evalQuery;
+    
+    const todayDate = new Date();
+    todayDate.setHours(0,0,0,0);
+    const probList: any[] = [];
+    const internList: any[] = [];
+
+    (evalEmps || []).forEach(emp => {
+      if (!emp.tgl_probation) return;
+      const probDate = new Date(emp.tgl_probation);
+      probDate.setHours(0,0,0,0);
+      
+      const targetDate = new Date(probDate);
+      targetDate.setMonth(targetDate.getMonth() + 3);
+      
+      const warningDate = new Date(targetDate);
+      warningDate.setDate(warningDate.getDate() - 7);
+      
+      if (todayDate >= warningDate) {
+        if (emp.employment_status === 'Probation') {
+          probList.push(emp);
+        } else {
+          internList.push(emp);
+        }
+      }
+    });
+
+    setProbationEvaluations(probList);
+    setInternshipEvaluations(internList);
   };
 
   const COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
@@ -285,6 +322,84 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card className="flex flex-col shadow-sm border-0 bg-white">
+          <CardHeader className="border-b border-slate-100 p-4 bg-emerald-50/50">
+            <CardTitle className="text-sm font-bold text-emerald-800">Evaluasi Probation</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 flex-1 overflow-auto max-h-[300px]">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-slate-500 bg-slate-50 sticky top-0">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Karyawan</th>
+                  <th className="px-4 py-3 font-medium">Tgl Probation</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {probationEvaluations.length > 0 ? probationEvaluations.map((emp, i) => (
+                  <tr key={i} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-3">
+                      <p className="font-semibold text-slate-700">{emp.full_name}</p>
+                      <p className="text-xs text-slate-500">{emp.departments?.name || '-'}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-amber-600 font-medium bg-amber-50 px-2 py-1 rounded">
+                        {new Date(emp.tgl_probation).toLocaleDateString('id-ID')}
+                      </span>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={2} className="px-4 py-6 text-center text-slate-500 italic">Tidak ada evaluasi probation saat ini.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+
+        <Card className="flex flex-col shadow-sm border-0 bg-white">
+          <CardHeader className="border-b border-slate-100 p-4 bg-blue-50/50">
+            <CardTitle className="text-sm font-bold text-blue-800">Evaluasi Internship / Kontrak</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 flex-1 overflow-auto max-h-[300px]">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-slate-500 bg-slate-50 sticky top-0">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Karyawan</th>
+                  <th className="px-4 py-3 font-medium">Tgl Masuk/Kontrak</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {internshipEvaluations.length > 0 ? internshipEvaluations.map((emp, i) => (
+                  <tr key={i} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-3">
+                      <p className="font-semibold text-slate-700">{emp.full_name}</p>
+                      <p className="text-xs text-slate-500">{emp.departments?.name || '-'}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">
+                        {new Date(emp.tgl_probation).toLocaleDateString('id-ID')}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                        {emp.employment_status}
+                      </span>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-6 text-center text-slate-500 italic">Tidak ada evaluasi internship/kontrak saat ini.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      </div>
+
     </div>
   );
 }

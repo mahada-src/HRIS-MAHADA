@@ -36,22 +36,20 @@ export default function TimKaryawan() {
     
     let years = today.getFullYear() - startDate.getFullYear();
     let months = today.getMonth() - startDate.getMonth();
+    let days = today.getDate() - startDate.getDate();
     
-    if (months < 0 || (months === 0 && today.getDate() < startDate.getDate())) {
+    if (days < 0) {
+      months--;
+      const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+      days += prevMonth.getDate();
+    }
+    
+    if (months < 0) {
       years--;
       months += 12;
     }
-    if (today.getDate() < startDate.getDate()) {
-      months--;
-      if (months < 0) {
-        months += 12;
-      }
-    }
 
-    if (years === 0 && months === 0) return 'Kurang dari 1 bln';
-    if (years === 0) return `${months} bln`;
-    if (months === 0) return `${years} thn`;
-    return `${years} thn ${months} bln`;
+    return `${years} Thn ${months} Bln ${days} Hr`;
   };
 
   useEffect(() => {
