@@ -41,8 +41,9 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
+    if (isManager && departmentId === 'all') return;
     fetchDashboardData();
-  }, [month, year, departmentId]);
+  }, [month, year, departmentId, isManager]);
 
   const fetchDepartments = async () => {
     const { data } = await supabase.from('departments').select('id, name');
@@ -52,7 +53,9 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     // Karyawan
     let empQuery = supabase.from('employees').select('id, department_id, employment_status');
-    if (departmentId !== 'all') {
+    if (role === 'Karyawan') {
+      empQuery = empQuery.eq('id', currentUser?.id);
+    } else if (departmentId !== 'all') {
       empQuery = empQuery.eq('department_id', departmentId);
     }
     // Tanggal untuk filter chart (Periode 21 bulan sebelumnya sd 20 bulan ini)
@@ -72,7 +75,9 @@ export default function Dashboard() {
     // Hadir & Terlambat hari ini
     const today = new Date().toISOString().split('T')[0];
     let attQuery = supabase.from('attendance').select('status, date, employees!inner(department_id)').gte('date', startDate).lte('date', endDate);
-    if (departmentId !== 'all') {
+    if (role === 'Karyawan') {
+      attQuery = attQuery.eq('employee_id', currentUser?.id);
+    } else if (departmentId !== 'all') {
       attQuery = attQuery.eq('employees.department_id', departmentId);
     }
 
@@ -91,8 +96,10 @@ export default function Dashboard() {
       empQuery,
       attQuery,
       ...requestTables.map(async (rt) => {
-        let query = supabase.from(rt.table).select('*, employees!inner(full_name, department_id)').eq('status', 'Menunggu Persetujuan');
-        if (departmentId !== 'all') {
+        let query = supabase.from(rt.table).select('*, employees!inner(full_name, department_id)').eq('status', 'Menunggu Persetujuan').limit(50);
+        if (role === 'Karyawan') {
+          query = query.eq('employee_id', currentUser?.id);
+        } else if (departmentId !== 'all') {
           query = query.eq('employees.department_id', departmentId);
         }
         const { data } = await query;
@@ -152,7 +159,9 @@ export default function Dashboard() {
 
     // Evaluasi Probation & Internship
     let evalQuery = supabase.from('employees').select('id, full_name, employee_code, tgl_probation, employment_status, departments(name), positions(title)').in('employment_status', ['Probation', 'Internship', 'Kontrak']);
-    if (departmentId !== 'all') {
+    if (role === 'Karyawan') {
+      evalQuery = evalQuery.eq('id', currentUser?.id);
+    } else if (departmentId !== 'all') {
       evalQuery = evalQuery.eq('department_id', departmentId);
     }
     const { data: evalEmps } = await evalQuery;
