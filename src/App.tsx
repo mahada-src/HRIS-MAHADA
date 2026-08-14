@@ -63,7 +63,7 @@ export default function App() {
           <Route path="ikatan-dinas" element={<IkatanDinas />} />
           <Route path="pelanggaran" element={<Pelanggaran />} />
           <Route path="pengaturan" element={<ProtectedRoute allowedRoles={['Super Admin', 'HR']}><Pengaturan /></ProtectedRoute>} />
-          <Route path="administrasi" element={<ProtectedRoute allowedRoles={['Super Admin', 'HR']}><Administrasi /></ProtectedRoute>} />
+          <Route path="administrasi" element={<ProtectedRoute><Administrasi /></ProtectedRoute>} />
           <Route path="manajemen-user" element={<ProtectedRoute allowedRoles={['Super Admin']}><ManajemenUser /></ProtectedRoute>} />
           
           <Route path="pengajuan">
