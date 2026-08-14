@@ -53,6 +53,8 @@ export default function Pengaturan() {
     if (!error) {
       setNewDept('');
       fetchMasterData();
+    } else {
+      alert("Gagal menambahkan departemen: " + error.message);
     }
   };
 
@@ -68,6 +70,8 @@ export default function Pengaturan() {
       setNewPosLevel('');
       setSelectedDeptId('');
       fetchMasterData();
+    } else {
+      alert("Gagal menambahkan jabatan: " + error.message);
     }
   };
 
@@ -77,6 +81,8 @@ export default function Pengaturan() {
     if (!error) {
       setNewCategory('');
       fetchCategories();
+    } else {
+      alert("Gagal menambahkan kategori: " + error.message);
     }
   };
 
@@ -86,6 +92,8 @@ export default function Pengaturan() {
       if (!error) {
         if (table === 'document_categories') fetchCategories();
         else fetchMasterData();
+      } else {
+        alert("Gagal menghapus data: " + error.message);
       }
     }
   };
