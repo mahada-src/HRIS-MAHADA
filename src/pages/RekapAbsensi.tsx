@@ -135,9 +135,8 @@ export default function RekapAbsensi() {
         if (a.status === 'Cuti') cuti++;
       });
 
-      // Based on formula: Hadir = Jml Hari Kerja - (Telat + WFH + Sakit + Izin 1/2 + Izin 1/3 + Cuti)
-      // Izin full day is not subtracted per user request.
-      const totalAbsence = telat + wfh + sakit + izinSetengah + izinSepertiga + cuti;
+      // Based on formula: Hadir = Jml Hari Kerja - (Sakit + Izin Full)
+      const totalAbsence = sakit + izin;
       const hadir = Math.max(0, jmlHariKerja - totalAbsence);
 
       return {
