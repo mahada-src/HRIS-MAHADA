@@ -4,12 +4,17 @@ import { Button } from '../components/ui/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
 import { supabase } from '../lib/supabase';
 import { Plus, Trash2, X, ExternalLink, Edit2 } from 'lucide-react';
+import { useAuth } from '../lib/AuthContext';
 
 export default function Administrasi() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [positions, setPositions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const { employee } = useAuth();
+  const role = employee?.role || 'Karyawan';
+  const positionTitle = (employee as any)?.positions?.title || employee?.posisi || '';
   
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -33,7 +38,16 @@ export default function Administrasi() {
       supabase.from('positions').select('title').order('title')
     ]);
     
-    if (docsRes.data) setDocuments(docsRes.data);
+    if (docsRes.data) {
+      let filteredDocs = docsRes.data;
+      if (role !== 'Super Admin' && role !== 'HR') {
+        filteredDocs = filteredDocs.filter(doc => 
+          (doc.access_role === 'Semua Karyawan' || doc.access_role === role) &&
+          (doc.position === 'Semua Jabatan' || doc.position === positionTitle)
+        );
+      }
+      setDocuments(filteredDocs);
+    }
     if (catRes.data) setCategories(catRes.data);
     if (posRes.data) setPositions(posRes.data);
     setLoading(false);
@@ -103,17 +117,19 @@ export default function Administrasi() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-emerald-800">Administrasi Dokumen</h1>
         </div>
-        <Button onClick={() => {
-          setEditId(null);
-          setTitle('');
-          setUrl('');
-          setCategory('');
-          setAccessRole('Semua Karyawan');
-          setPosition('Semua Jabatan');
-          setShowModal(true);
-        }} className="bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm">
-          <Plus className="w-4 h-4 mr-2" /> Tambah Dokumen
-        </Button>
+        {role !== 'Karyawan' && (
+          <Button onClick={() => {
+            setEditId(null);
+            setTitle('');
+            setUrl('');
+            setCategory('');
+            setAccessRole('Semua Karyawan');
+            setPosition('Semua Jabatan');
+            setShowModal(true);
+          }} className="bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm">
+            <Plus className="w-4 h-4 mr-2" /> Tambah Dokumen
+          </Button>
+        )}
       </div>
 
       <Card className="border-0 shadow-sm mt-0 rounded-t-none">
@@ -126,14 +142,14 @@ export default function Administrasi() {
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">HAK AKSES</TableHead>
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">JABATAN</TableHead>
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">LINK GOOGLE DOC</TableHead>
-                <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4 text-center w-24">AKSI</TableHead>
+                {role !== 'Karyawan' && <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4 text-center w-24">AKSI</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-slate-100">
               {loading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={role !== 'Karyawan' ? 6 : 5} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
               ) : documents.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">Tidak ada dokumen.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={role !== 'Karyawan' ? 6 : 5} className="text-center py-8 text-slate-500">Tidak ada dokumen.</TableCell></TableRow>
               ) : documents.map(doc => (
                 <TableRow key={doc.id} className="hover:bg-slate-50">
                   <TableCell className="font-medium text-slate-800">{doc.title}</TableCell>
@@ -154,16 +170,18 @@ export default function Administrasi() {
                       Buka Dokumen
                     </a>
                   </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex justify-center gap-2">
-                      <Button size="sm" variant="outline" className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 p-2 h-auto" onClick={() => openEditModal(doc)}>
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 p-2 h-auto" onClick={() => handleDelete(doc.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  {role !== 'Karyawan' && (
+                    <TableCell className="text-center">
+                      <div className="flex justify-center gap-2">
+                        <Button size="sm" variant="outline" className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 p-2 h-auto" onClick={() => openEditModal(doc)}>
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 p-2 h-auto" onClick={() => handleDelete(doc.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

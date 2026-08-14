@@ -226,24 +226,28 @@ export default function TimKaryawan() {
             >
               Cuti
             </button>
-            <button 
-              className={`px-4 py-2 text-sm font-semibold border-r border-slate-200 hover:bg-slate-50 transition-colors ${filterStatus === 'Resign' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
-              onClick={() => setFilterStatus('Resign')}
-            >
-              Resign
-            </button>
-            <button 
-              className={`px-4 py-2 text-sm font-semibold border-r border-slate-200 hover:bg-slate-50 transition-colors ${filterStatus === 'PHK' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
-              onClick={() => setFilterStatus('PHK')}
-            >
-              PHK
-            </button>
-            <button 
-              className={`px-4 py-2 text-sm font-semibold hover:bg-slate-50 transition-colors ${filterStatus === 'Semua' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
-              onClick={() => setFilterStatus('Semua')}
-            >
-              Semua
-            </button>
+            {role !== 'Karyawan' && (
+              <>
+                <button 
+                  className={`px-4 py-2 text-sm font-semibold border-r border-slate-200 hover:bg-slate-50 transition-colors ${filterStatus === 'Resign' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
+                  onClick={() => setFilterStatus('Resign')}
+                >
+                  Resign
+                </button>
+                <button 
+                  className={`px-4 py-2 text-sm font-semibold border-r border-slate-200 hover:bg-slate-50 transition-colors ${filterStatus === 'PHK' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
+                  onClick={() => setFilterStatus('PHK')}
+                >
+                  PHK
+                </button>
+                <button 
+                  className={`px-4 py-2 text-sm font-semibold hover:bg-slate-50 transition-colors ${filterStatus === 'Semua' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
+                  onClick={() => setFilterStatus('Semua')}
+                >
+                  Semua
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
