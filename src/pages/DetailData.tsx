@@ -71,7 +71,7 @@ export default function DetailData() {
     try {
       let query = supabase
         .from('employees')
-        .select('*')
+        .select('*, departments(name), positions(title)')
         .order('employee_code', { ascending: false });
         
       if (role === 'Karyawan') {
@@ -230,8 +230,8 @@ export default function DetailData() {
                               <span className="font-semibold text-slate-800">{emp.full_name}</span>
                             </div>
                           </TableCell>
-                          <TableCell>{emp.divisi || '-'}</TableCell>
-                          <TableCell>{emp.posisi || '-'}</TableCell>
+                          <TableCell>{(emp.departments as any)?.name || emp.divisi || '-'}</TableCell>
+                          <TableCell>{(emp.positions as any)?.title || emp.posisi || '-'}</TableCell>
                           <TableCell>
                             <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-semibold ${
                               emp.status_karyawan === 'Resign' ? 'bg-red-100 text-red-700' : 
