@@ -4,8 +4,10 @@ import { Button } from '../components/ui/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
 import { supabase } from '../lib/supabase';
 import { Plus, Trash2, Settings, Database, FolderKey } from 'lucide-react';
+import { useAuth } from '../lib/AuthContext';
 
 export default function Pengaturan() {
+  const { employee } = useAuth();
   const [activeTab, setActiveTab] = useState<'system' | 'master' | 'kategori'>('system');
 
   // Master Data State
@@ -49,7 +51,11 @@ export default function Pengaturan() {
 
   const handleAddDept = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await supabase.from('departments').insert([{ name: newDept }]);
+    const { error } = await supabase.from('departments').insert([{ 
+      name: newDept,
+      user_id: employee?.user_id,
+      role: employee?.role 
+    }]);
     if (!error) {
       setNewDept('');
       fetchMasterData();
@@ -63,7 +69,9 @@ export default function Pengaturan() {
     const { error } = await supabase.from('positions').insert([{ 
       title: newPos, 
       level: newPosLevel,
-      department_id: selectedDeptId || null
+      department_id: selectedDeptId || null,
+      user_id: employee?.user_id,
+      role: employee?.role
     }]);
     if (!error) {
       setNewPos('');
@@ -77,7 +85,11 @@ export default function Pengaturan() {
 
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await supabase.from('document_categories').insert([{ name: newCategory }]);
+    const { error } = await supabase.from('document_categories').insert([{ 
+      name: newCategory,
+      user_id: employee?.user_id,
+      role: employee?.role
+    }]);
     if (!error) {
       setNewCategory('');
       fetchCategories();
