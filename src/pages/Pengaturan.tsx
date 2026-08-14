@@ -52,9 +52,7 @@ export default function Pengaturan() {
   const handleAddDept = async (e: React.FormEvent) => {
     e.preventDefault();
     const { error } = await supabase.from('departments').insert([{ 
-      name: newDept,
-      user_id: employee?.user_id,
-      role: employee?.role 
+      name: newDept
     }]);
     if (!error) {
       setNewDept('');
@@ -69,9 +67,7 @@ export default function Pengaturan() {
     const { error } = await supabase.from('positions').insert([{ 
       title: newPos, 
       level: newPosLevel,
-      department_id: selectedDeptId || null,
-      user_id: employee?.user_id,
-      role: employee?.role
+      department_id: selectedDeptId || null
     }]);
     if (!error) {
       setNewPos('');
@@ -86,9 +82,7 @@ export default function Pengaturan() {
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     const { error } = await supabase.from('document_categories').insert([{ 
-      name: newCategory,
-      user_id: employee?.user_id,
-      role: employee?.role
+      name: newCategory
     }]);
     if (!error) {
       setNewCategory('');
