@@ -15,6 +15,7 @@ export default function Administrasi() {
   const { employee } = useAuth();
   const role = employee?.role || 'Karyawan';
   const positionTitle = (employee as any)?.positions?.title || employee?.posisi || '';
+  const departmentName = (employee as any)?.departments?.name || '';
   
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -35,7 +36,7 @@ export default function Administrasi() {
     const [docsRes, catRes, posRes] = await Promise.all([
       supabase.from('documents').select('*').order('created_at', { ascending: false }),
       supabase.from('document_categories').select('*').order('name'),
-      supabase.from('positions').select('title').order('title')
+      supabase.from('positions').select('title, departments(name)').order('title')
     ]);
     
     if (docsRes.data) {
@@ -45,8 +46,17 @@ export default function Administrasi() {
           const isRoleMatch = doc.access_role === 'Semua Karyawan' || 
                               doc.access_role === role || 
                               (role === 'Manager' && doc.access_role === 'Karyawan');
-          const isPositionMatch = doc.position === 'Semua Jabatan' || 
-                                  doc.position === positionTitle;
+                              
+          let isPositionMatch = doc.position === 'Semua Jabatan' || 
+                                doc.position === positionTitle;
+
+          if (role === 'Manager' && !isPositionMatch && doc.position !== 'Semua Jabatan') {
+            const docPos = posRes.data?.find((p: any) => p.title === doc.position);
+            if (docPos && (docPos as any).departments?.name === departmentName) {
+              isPositionMatch = true;
+            }
+          }
+
           return isRoleMatch && isPositionMatch;
         });
       }
