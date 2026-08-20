@@ -61,7 +61,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
   const filteredNavigation = navigation.filter(item => {
     if (role === 'Super Admin') return true;
     if (role === 'HR') return item.name !== 'Manajemen User';
-    if (role === 'Manager') return !['Pengaturan', 'Administrasi', 'Manajemen User'].includes(item.name);
+    if (role === 'Manager') return !['Pengaturan', 'Manajemen User'].includes(item.name);
     return ['Tim Karyawan', 'Detail Data', 'Rekap Absensi', 'Benefit Karyawan', 'Ikatan Dinas', 'Pelanggaran (SP)', 'Pengajuan', 'Administrasi'].includes(item.name);
   });
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
