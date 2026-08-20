@@ -41,10 +41,14 @@ export default function Administrasi() {
     if (docsRes.data) {
       let filteredDocs = docsRes.data;
       if (role !== 'Super Admin' && role !== 'HR') {
-        filteredDocs = filteredDocs.filter(doc => 
-          (doc.access_role === 'Semua Karyawan' || doc.access_role === role) &&
-          (doc.position === 'Semua Jabatan' || doc.position === positionTitle)
-        );
+        filteredDocs = filteredDocs.filter(doc => {
+          const isRoleMatch = doc.access_role === 'Semua Karyawan' || 
+                              doc.access_role === role || 
+                              (role === 'Manager' && doc.access_role === 'Karyawan');
+          const isPositionMatch = doc.position === 'Semua Jabatan' || 
+                                  doc.position === positionTitle;
+          return isRoleMatch && isPositionMatch;
+        });
       }
 
       filteredDocs.sort((a, b) => {
@@ -243,6 +247,7 @@ export default function Administrasi() {
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all bg-white"
                     >
                       <option value="Semua Karyawan">Semua Karyawan</option>
+                      <option value="Karyawan">Karyawan</option>
                       <option value="Super Admin">Super Admin</option>
                       <option value="HR">HR</option>
                       <option value="Manager">Manager</option>
