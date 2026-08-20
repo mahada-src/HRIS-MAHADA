@@ -46,6 +46,13 @@ export default function Administrasi() {
           (doc.position === 'Semua Jabatan' || doc.position === positionTitle)
         );
       }
+
+      filteredDocs.sort((a, b) => {
+        if (a.access_role === 'Semua Karyawan' && b.access_role !== 'Semua Karyawan') return -1;
+        if (a.access_role !== 'Semua Karyawan' && b.access_role === 'Semua Karyawan') return 1;
+        return 0;
+      });
+
       setDocuments(filteredDocs);
     }
     if (catRes.data) setCategories(catRes.data);
@@ -117,7 +124,7 @@ export default function Administrasi() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-emerald-800">Administrasi Dokumen</h1>
         </div>
-        {role !== 'Karyawan' && (
+        {role === 'Super Admin' && (
           <Button onClick={() => {
             setEditId(null);
             setTitle('');
@@ -142,14 +149,14 @@ export default function Administrasi() {
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">HAK AKSES</TableHead>
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">JABATAN</TableHead>
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">LINK GOOGLE DOC</TableHead>
-                {role !== 'Karyawan' && <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4 text-center w-24">AKSI</TableHead>}
+                {role === 'Super Admin' && <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4 text-center w-24">AKSI</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-slate-100">
               {loading ? (
-                <TableRow><TableCell colSpan={role !== 'Karyawan' ? 6 : 5} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={role === 'Super Admin' ? 6 : 5} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
               ) : documents.length === 0 ? (
-                <TableRow><TableCell colSpan={role !== 'Karyawan' ? 6 : 5} className="text-center py-8 text-slate-500">Tidak ada dokumen.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={role === 'Super Admin' ? 6 : 5} className="text-center py-8 text-slate-500">Tidak ada dokumen.</TableCell></TableRow>
               ) : documents.map(doc => (
                 <TableRow key={doc.id} className="hover:bg-slate-50">
                   <TableCell className="font-medium text-slate-800">{doc.title}</TableCell>
@@ -170,7 +177,7 @@ export default function Administrasi() {
                       Buka Dokumen
                     </a>
                   </TableCell>
-                  {role !== 'Karyawan' && (
+                  {role === 'Super Admin' && (
                     <TableCell className="text-center">
                       <div className="flex justify-center gap-2">
                         <Button size="sm" variant="outline" className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 p-2 h-auto" onClick={() => openEditModal(doc)}>
