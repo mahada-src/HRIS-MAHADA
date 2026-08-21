@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { supabase } from '../../lib/supabase';
 import { Employee } from '../../types';
 import { useAuth } from '../../lib/AuthContext';
-import { Plus, X, Check, XCircle } from 'lucide-react';
+import { Plus, X, Check, XCircle, Trash2 } from 'lucide-react';
 
 export default function PengajuanCuti() {
   const [data, setData] = useState<any[]>([]);
@@ -123,6 +123,24 @@ export default function PengajuanCuti() {
         }
       }
       fetchData();
+    }
+  };
+
+  const handleDelete = async (id: string, empId: string, startDate: string, endDate: string) => {
+    if (!window.confirm('Yakin ingin menghapus pengajuan ini?')) return;
+    
+    const { error } = await supabase.from('leave_requests').delete().eq('id', id);
+    if (!error) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const currentDateStr = d.toISOString().split('T')[0];
+        await supabase.from('attendance').delete().eq('employee_id', empId).eq('date', currentDateStr);
+      }
+      fetchData();
+    } else {
+      alert('Gagal menghapus pengajuan');
     }
   };
 
@@ -296,12 +314,17 @@ export default function PengajuanCuti() {
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      {item.status === 'Menunggu Persetujuan' && (isAdmin || currentEmployee?.role === 'Manager') && (
-                        <div className="flex justify-end gap-2">
-                          <Button size="sm" variant="outline" className="text-emerald-600 hover:text-emerald-700 border-emerald-200" onClick={() => handleUpdateStatus(item.id, 'Disetujui', item.employee_id, item.start_date, item.end_date)}><Check className="w-4 h-4" /></Button>
-                          <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 border-red-200" onClick={() => handleUpdateStatus(item.id, 'Ditolak', item.employee_id, item.start_date, item.end_date)}><XCircle className="w-4 h-4" /></Button>
-                        </div>
-                      )}
+                      <div className="flex justify-end gap-2">
+                        {item.status === 'Menunggu Persetujuan' && (isAdmin || currentEmployee?.role === 'Manager') && (
+                          <>
+                            <Button size="sm" variant="outline" className="text-emerald-600 hover:text-emerald-700 border-emerald-200" onClick={() => handleUpdateStatus(item.id, 'Disetujui', item.employee_id, item.start_date, item.end_date)}><Check className="w-4 h-4" /></Button>
+                            <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 border-red-200" onClick={() => handleUpdateStatus(item.id, 'Ditolak', item.employee_id, item.start_date, item.end_date)}><XCircle className="w-4 h-4" /></Button>
+                          </>
+                        )}
+                        {isAdmin && (
+                          <Button size="sm" variant="outline" className="text-pink-600 hover:text-pink-700 border-pink-200 hover:bg-pink-50" onClick={() => handleDelete(item.id, item.employee_id, item.start_date, item.end_date)}><Trash2 className="w-4 h-4" /></Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
