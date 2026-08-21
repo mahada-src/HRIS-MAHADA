@@ -377,7 +377,7 @@ export default function RekapPengajuan() {
         </CardContent>
       </Card>
 
-      {selectedEmployee && !loading && summary && (
+      {selectedEmployee && !loading && summary && (<>
         <Card>
           <CardHeader className="border-b border-slate-100 bg-slate-50/50">
             <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
@@ -498,6 +498,7 @@ export default function RekapPengajuan() {
               )}
             </CardContent>
           </Card>
+        </>
       )}
 
       {selectedEmployee && !loading && (
