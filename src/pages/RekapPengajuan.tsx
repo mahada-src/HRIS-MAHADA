@@ -7,6 +7,16 @@ import { Download, FileText, Eye, X } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+const calculateDuration = (start: string, end: string) => {
+  if (!start || !end) return 0;
+  const [h1, m1] = start.split(':').map(Number);
+  const [h2, m2] = end.split(':').map(Number);
+  const totalMins1 = h1 * 60 + m1;
+  let totalMins2 = h2 * 60 + m2;
+  if (totalMins2 < totalMins1) totalMins2 += 24 * 60; // cross midnight
+  return totalMins2 - totalMins1;
+};
+
 export default function RekapPengajuan() {
   const { employee, user } = useAuth();
   const role = employee?.role || 'Karyawan';
@@ -22,6 +32,7 @@ export default function RekapPengajuan() {
   const [workingDays, setWorkingDays] = useState(0);
   const [attendances, setAttendances] = useState<any[]>([]);
   const [allRequests, setAllRequests] = useState<any[]>([]);
+  const [overtimeRequests, setOvertimeRequests] = useState<any[]>([]);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [pdfUrl, setPdfUrl] = useState('');
 
@@ -86,7 +97,7 @@ export default function RekapPengajuan() {
       supabase.from('one_third_day_requests').select('*, id, date, status, reason').eq('employee_id', selectedEmployee).gte('date', startStr).lte('date', endStr).eq('status', 'Disetujui'),
       supabase.from('wfh_requests').select('*, id, date, status, reason').eq('employee_id', selectedEmployee).gte('date', startStr).lte('date', endStr).eq('status', 'Disetujui'),
       supabase.from('late_requests').select('*, id, date, status, reason').eq('employee_id', selectedEmployee).gte('date', startStr).lte('date', endStr).eq('status', 'Disetujui'),
-      supabase.from('overtime_requests').select('*, id, date, status, notes').eq('employee_id', selectedEmployee).gte('date', startStr).lte('date', endStr).eq('status', 'Disetujui'),
+      supabase.from('overtime_requests').select('*, id, date, status, notes').eq('employee_id', selectedEmployee).gte('date', startStr).lte('date', endStr),
       supabase.from('working_days').select('working_days_count').eq('employee_id', selectedEmployee).eq('period_month', month.padStart(2, '0')).eq('period_year', year).maybeSingle()
     ]);
 
@@ -165,10 +176,11 @@ export default function RekapPengajuan() {
     mapRequest(thirdRes.data || [], 'Izin 1/3 Hari', 'date', 'reason');
     mapRequest(wfhRes.data || [], 'WFH', 'date', 'reason');
     mapRequest(lateRes.data || [], 'Terlambat', 'date', 'reason');
-    mapRequest(overtimeRes.data || [], 'Lembur', 'date', 'notes');
+    mapRequest((overtimeRes.data || []).filter(r => r.status === 'Disetujui'), 'Lembur', 'date', 'notes');
 
     combined.sort((a, b) => new Date(a.dateRaw).getTime() - new Date(b.dateRaw).getTime());
     setAllRequests(combined);
+    setOvertimeRequests(overtimeRes.data || []);
     
     setLoading(false);
   };
@@ -190,6 +202,11 @@ export default function RekapPengajuan() {
   const selectedEmpName = useMemo(() => {
     return employees.find(e => e.id === selectedEmployee)?.full_name || '';
   }, [selectedEmployee, employees]);
+
+  const totalHariLembur = new Set(overtimeRequests.map(item => `${item.employee_id}_${item.date}`)).size;
+  const totalDurasiMenit = overtimeRequests.reduce((total, item) => total + calculateDuration(item.start_time, item.end_time), 0);
+  const totalMenitEfektif = overtimeRequests.reduce((total, item) => total + (item.menit_efektif || 0), 0);
+  const biayaLembur = Math.floor(totalMenitEfektif * (15000 / 60));
 
   const generatePDF = (preview = false) => {
     if (!selectedEmployee) {
@@ -235,10 +252,47 @@ export default function RekapPengajuan() {
       currentY = (doc as any).lastAutoTable.finalY + 15;
     }
 
-    // Table 2: Seluruh Pengajuan
+    // Table 2: Rekap Lembur
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('2. Tabel Seluruh Pengajuan', 14, currentY);
+    doc.text('2. Rekap Lembur', 14, currentY);
+    currentY += 5;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Jumlah Hari Lembur: ${totalHariLembur} Hari`, 14, currentY);
+    doc.text(`Jumlah Durasi Menit: ${totalDurasiMenit} Menit`, 80, currentY);
+    currentY += 5;
+    doc.text(`Jumlah Menit Efektif: ${totalMenitEfektif} Menit`, 14, currentY);
+    doc.text(`Biaya Lembur: Rp ${new Intl.NumberFormat('id-ID').format(biayaLembur)}`, 80, currentY);
+    currentY += 7;
+
+    if (overtimeRequests.length > 0) {
+      autoTable(doc, {
+        startY: currentY,
+        head: [['Tanggal', 'Jam Mulai', 'Jam Selesai', 'Durasi (Mnt)', 'Target Pekerjaan', 'Menit Efektif', 'Status']],
+        body: overtimeRequests.map(req => [
+            new Date(req.date).toLocaleDateString('id-ID'),
+            req.start_time, req.end_time,
+            calculateDuration(req.start_time, req.end_time),
+            req.target_work || '-',
+            req.menit_efektif || 0,
+            req.status
+        ]),
+        theme: 'grid',
+        headStyles: { fillColor: [59, 130, 246] },
+        margin: { left: 14 }
+      });
+      currentY = (doc as any).lastAutoTable.finalY + 15;
+    } else {
+      doc.text('Tidak ada data lembur pada periode ini.', 14, currentY);
+      currentY += 10;
+    }
+
+    // Table 3: Seluruh Pengajuan
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('3. Tabel Seluruh Pengajuan', 14, currentY);
     currentY += 5;
 
     if (allRequests.length > 0) {
@@ -362,8 +416,88 @@ export default function RekapPengajuan() {
                  </tbody>
                </table>
              </div>
-          </CardContent>
-        </Card>
+           </CardContent>
+         </Card>
+
+         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="bg-emerald-50 border-emerald-100 shadow-sm">
+              <CardContent className="p-4 flex flex-col justify-center">
+                <div className="text-sm text-emerald-600 font-medium">Jumlah Hari Lembur</div>
+                <div className="text-2xl font-bold text-emerald-800">{totalHariLembur} <span className="text-sm font-normal text-emerald-600">Hari</span></div>
+              </CardContent>
+            </Card>
+            <Card className="bg-blue-50 border-blue-100 shadow-sm">
+              <CardContent className="p-4 flex flex-col justify-center">
+                <div className="text-sm text-blue-600 font-medium">Jumlah Durasi Menit</div>
+                <div className="text-2xl font-bold text-blue-800">{totalDurasiMenit} <span className="text-sm font-normal text-blue-600">Menit</span></div>
+              </CardContent>
+            </Card>
+            <Card className="bg-amber-50 border-amber-100 shadow-sm">
+              <CardContent className="p-4 flex flex-col justify-center">
+                <div className="text-sm text-amber-600 font-medium">Jumlah Menit Efektif</div>
+                <div className="text-2xl font-bold text-amber-800">{totalMenitEfektif} <span className="text-sm font-normal text-amber-600">Menit</span></div>
+              </CardContent>
+            </Card>
+            <Card className="bg-purple-50 border-purple-100 shadow-sm">
+              <CardContent className="p-4 flex flex-col justify-center">
+                <div className="text-sm text-purple-600 font-medium">Biaya Lembur</div>
+                <div className="text-2xl font-bold text-purple-800">
+                  <span className="text-sm font-normal text-purple-600 mr-1">Rp</span>
+                  {new Intl.NumberFormat('id-ID').format(biayaLembur)}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-bold text-slate-800">Tabel Rekap Lembur</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {overtimeRequests.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left border-collapse">
+                     <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
+                        <tr>
+                          <th className="px-4 py-3 font-medium">Tanggal</th>
+                          <th className="px-4 py-3 font-medium">Jam Mulai</th>
+                          <th className="px-4 py-3 font-medium">Jam Selesai</th>
+                          <th className="px-4 py-3 font-medium">Durasi (Menit)</th>
+                          <th className="px-4 py-3 font-medium">Target Pekerjaan</th>
+                          <th className="px-4 py-3 font-medium">Menit Efektif</th>
+                          <th className="px-4 py-3 font-medium">Status</th>
+                        </tr>
+                     </thead>
+                     <tbody className="divide-y divide-slate-100">
+                        {overtimeRequests.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50/50">
+                            <td className="px-4 py-3">{new Date(item.date).toLocaleDateString('id-ID')}</td>
+                            <td className="px-4 py-3">{item.start_time}</td>
+                            <td className="px-4 py-3">{item.end_time}</td>
+                            <td className="px-4 py-3 font-semibold text-slate-700">{calculateDuration(item.start_time, item.end_time)}</td>
+                            <td className="px-4 py-3">{item.target_work || '-'}</td>
+                            <td className="px-4 py-3 font-semibold text-emerald-600">{item.menit_efektif || 0}</td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                                item.status === 'Disetujui' ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' :
+                                item.status === 'Ditolak' ? 'bg-red-50 text-red-700 ring-red-600/10' :
+                                'bg-amber-50 text-amber-700 ring-amber-600/10'
+                              }`}>
+                                {item.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                     </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="p-8 text-center text-slate-500">
+                  Tidak ada data lembur pada periode ini.
+                </div>
+              )}
+            </CardContent>
+          </Card>
       )}
 
       {selectedEmployee && !loading && (
@@ -371,7 +505,7 @@ export default function RekapPengajuan() {
           <CardHeader className="border-b border-slate-100 bg-slate-50/50">
             <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
               <FileText className="h-5 w-5 text-slate-600" />
-              2. Tabel Seluruh Pengajuan Disetujui
+              3. Tabel Seluruh Pengajuan Disetujui
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
