@@ -76,7 +76,7 @@ export default function DetailData() {
         
       if (role === 'Karyawan') {
         query = query.eq('id', loggedInEmployee?.id);
-      } else if (role === 'Manager') {
+      } else if (role === 'Manager' || role === 'Ass Super Admin') {
         query = query.eq('department_id', loggedInEmployee?.department_id);
       }
       

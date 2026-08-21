@@ -33,7 +33,7 @@ export default function IkatanDinas() {
     let query = supabase.from('employees').select('id, full_name, employee_code, department_id').order('full_name');
     if (role === 'Karyawan') {
       query = query.eq('id', currentUser?.id);
-    } else if (role === 'Manager') {
+    } else if (role === 'Manager' || role === 'Ass Super Admin') {
       query = query.eq('department_id', currentUser?.department_id);
     }
     const { data } = await query;
@@ -49,7 +49,7 @@ export default function IkatanDinas() {
       
     if (role === 'Karyawan') {
       query = query.eq('employee_id', currentUser?.id);
-    } else if (role === 'Manager') {
+    } else if (role === 'Manager' || role === 'Ass Super Admin') {
       query = query.eq('employees.department_id', currentUser?.department_id);
     }
 

@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, Eye, X } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -22,6 +22,8 @@ export default function RekapPengajuan() {
   const [workingDays, setWorkingDays] = useState(0);
   const [attendances, setAttendances] = useState<any[]>([]);
   const [allRequests, setAllRequests] = useState<any[]>([]);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState('');
 
   const months = [
     { value: '1', label: 'Januari' }, { value: '2', label: 'Februari' },
@@ -158,23 +160,22 @@ export default function RekapPengajuan() {
 
   const getSummaryLine = () => {
     if (!selectedEmployee) return null;
-    const hadir = attendances.filter(a => a.status === 'Hadir').length;
     const telat = attendances.filter(a => a.status === 'Telat').length;
-    const alpa = attendances.filter(a => a.status === 'Alpa').length;
     const sakit = attendances.filter(a => a.status === 'Sakit').length;
     const izin = attendances.filter(a => a.status === 'Izin').length;
     const setengah = attendances.filter(a => a.status === 'Setengah Hari').length;
     const sepertiga = attendances.filter(a => a.status === 'Izin 1/3 Hari').length;
     const cuti = attendances.filter(a => a.status === 'Cuti').length;
+    const hadir = Math.max(0, workingDays - (sakit + izin));
     
-    return { hadir, telat, alpa, sakit, izin, setengah, sepertiga, cuti, workingDays };
+    return { hadir, telat, sakit, izin, setengah, sepertiga, cuti, workingDays };
   };
 
   const selectedEmpName = useMemo(() => {
     return employees.find(e => e.id === selectedEmployee)?.full_name || '';
   }, [selectedEmployee, employees]);
 
-  const handleDownloadPDF = () => {
+  const generatePDF = (preview = false) => {
     if (!selectedEmployee) {
         alert("Silakan pilih karyawan terlebih dahulu!");
         return;
@@ -207,9 +208,9 @@ export default function RekapPengajuan() {
     if (sum) {
       autoTable(doc, {
         startY: currentY,
-        head: [['Hari Kerja', 'Hadir', 'Sakit', 'Izin', 'Izin 1/2', 'Izin 1/3', 'Cuti', 'Alpa', 'Telat']],
+        head: [['Hari Kerja', 'Hadir', 'Sakit', 'Izin Full', 'Izin 1/2', 'Izin 1/3', 'Cuti', 'Telat']],
         body: [[
-            sum.workingDays, sum.hadir, sum.sakit, sum.izin, sum.setengah, sum.sepertiga, sum.cuti, sum.alpa, sum.telat
+            sum.workingDays, sum.hadir, sum.sakit, sum.izin, sum.setengah, sum.sepertiga, sum.cuti, sum.telat
         ]],
         theme: 'grid',
         headStyles: { fillColor: [16, 185, 129] },
@@ -248,7 +249,13 @@ export default function RekapPengajuan() {
         doc.text('Tidak ada data pengajuan pada periode ini.', 14, currentY + 5);
     }
 
-    doc.save(`Rekap_Pengajuan_${selectedEmpName.replace(/\s+/g, '_')}_${monthName}_${year}.pdf`);
+    if (preview) {
+        const blobUrl = doc.output('bloburl');
+        setPdfUrl(blobUrl.toString());
+        setShowPdfModal(true);
+    } else {
+        doc.save(`Rekap_Pengajuan_${selectedEmpName.replace(/\s+/g, '_')}_${monthName}_${year}.pdf`);
+    }
   };
 
   const summary = getSummaryLine();
@@ -257,9 +264,14 @@ export default function RekapPengajuan() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold tracking-tight text-slate-800">Rekap Pengajuan</h1>
-        <Button onClick={handleDownloadPDF} disabled={!selectedEmployee || loading} className="bg-slate-800 hover:bg-slate-900 text-white flex items-center gap-2">
-          <Download className="h-4 w-4" /> Download PDF
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => generatePDF(true)} disabled={!selectedEmployee || loading} variant="outline" className="flex items-center gap-2 border-slate-300">
+            <Eye className="h-4 w-4" /> Preview
+          </Button>
+          <Button onClick={() => generatePDF(false)} disabled={!selectedEmployee || loading} className="bg-slate-800 hover:bg-slate-900 text-white flex items-center gap-2">
+            <Download className="h-4 w-4" /> Download PDF
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -315,7 +327,6 @@ export default function RekapPengajuan() {
                       <th className="px-4 py-3 font-medium">Izin 1/2</th>
                       <th className="px-4 py-3 font-medium">Izin 1/3</th>
                       <th className="px-4 py-3 font-medium">Cuti</th>
-                      <th className="px-4 py-3 font-medium">Alpa</th>
                       <th className="px-4 py-3 font-medium">Telat</th>
                     </tr>
                  </thead>
@@ -328,7 +339,6 @@ export default function RekapPengajuan() {
                       <td className="px-4 py-4 text-amber-600 font-medium">{summary.setengah}</td>
                       <td className="px-4 py-4 text-amber-600 font-medium">{summary.sepertiga}</td>
                       <td className="px-4 py-4 text-purple-600 font-medium">{summary.cuti}</td>
-                      <td className="px-4 py-4 text-red-600 font-medium">{summary.alpa}</td>
                       <td className="px-4 py-4 text-red-600 font-medium">{summary.telat}</td>
                     </tr>
                  </tbody>
@@ -389,6 +399,35 @@ export default function RekapPengajuan() {
          <div className="py-12 text-center text-slate-500 animate-pulse">Memuat data...</div>
       )}
 
+      {showPdfModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <FileText className="h-5 w-5 text-emerald-600" /> Preview PDF
+              </h3>
+              <button onClick={() => setShowPdfModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 p-0 bg-slate-100">
+              <iframe 
+                src={pdfUrl} 
+                className="w-full h-full border-none"
+                title="PDF Preview"
+              />
+            </div>
+            <div className="p-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50">
+              <Button variant="outline" onClick={() => setShowPdfModal(false)}>
+                Tutup
+              </Button>
+              <Button onClick={() => generatePDF(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2">
+                <Download className="h-4 w-4" /> Download PDF Sekarang
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

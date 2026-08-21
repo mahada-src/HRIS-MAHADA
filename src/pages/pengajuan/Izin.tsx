@@ -289,7 +289,7 @@ export default function PengajuanIzin() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        {item.status === 'Menunggu Persetujuan' && (isAdmin || currentEmployee?.role === 'Manager') && (
+                        {item.status === 'Menunggu Persetujuan' && (isAdmin || isManager) && (
                           <>
                             <Button size="sm" variant="outline" className="text-emerald-600 hover:text-emerald-700 border-emerald-200" onClick={() => handleUpdateStatus(item.id, 'Disetujui', item.employee_id, item.date)}><Check className="w-4 h-4" /></Button>
                             <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 border-red-200" onClick={() => handleUpdateStatus(item.id, 'Ditolak', item.employee_id, item.date)}><XCircle className="w-4 h-4" /></Button>

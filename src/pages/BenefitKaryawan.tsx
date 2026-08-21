@@ -24,7 +24,7 @@ export default function BenefitKaryawan() {
       
     if (role === 'Karyawan') {
       query = query.eq('id', currentUser?.id);
-    } else if (role === 'Manager') {
+    } else if (role === 'Manager' || role === 'Ass Super Admin') {
       query = query.eq('department_id', currentUser?.department_id);
     }
       
