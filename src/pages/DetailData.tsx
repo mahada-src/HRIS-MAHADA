@@ -22,7 +22,7 @@ export default function DetailData() {
   const navigate = useNavigate();
   const { employee: loggedInEmployee } = useAuth();
   const role = loggedInEmployee?.role || 'Karyawan';
-  const isManagerOrKaryawan = role === 'Manager' || role === 'Karyawan';
+  const isManagerOrKaryawan = role === 'Manager' || role === 'Ass Super Admin' || role === 'Karyawan';
   
   // State for List View
   const [allEmployees, setAllEmployees] = useState<Employee[]>([]);

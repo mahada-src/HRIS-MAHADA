@@ -50,7 +50,7 @@ export default function RekapPengajuan() {
   }, [selectedEmployee, month, year]);
 
   const fetchEmployees = async () => {
-    let query = supabase.from('employees').select('id, full_name, employee_code, department_id').eq('employment_status', 'Aktif').order('full_name');
+    let query = supabase.from('employees').select('id, full_name, employee_code, department_id, employment_status').neq('employment_status', 'Resign').order('full_name');
     if (role === 'Manager') {
       query = query.eq('department_id', employee?.department_id);
     } else if (role === 'Karyawan') {

@@ -9,7 +9,7 @@ import { useAuth } from '../lib/AuthContext';
 export default function Dashboard() {
   const { employee: currentUser } = useAuth();
   const role = currentUser?.role || 'Karyawan';
-  const isManager = role === 'Manager';
+  const isManager = role === 'Manager' || role === 'Ass Super Admin';
   const [stats, setStats] = useState([
     { title: 'Total Karyawan', value: '-', subtitle: 'Memuat...', subtitleColor: 'text-slate-500' },
     { title: 'Hadir Hari Ini', value: '-', subtitle: 'Memuat...', subtitleColor: 'text-slate-500' },

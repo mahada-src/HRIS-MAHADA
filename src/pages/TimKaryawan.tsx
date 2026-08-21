@@ -18,7 +18,7 @@ export default function TimKaryawan() {
   const navigate = useNavigate();
   const { employee: currentUser } = useAuth();
   const role = currentUser?.role || 'Karyawan';
-  const isManagerOrKaryawan = role === 'Manager' || role === 'Karyawan';
+  const isManagerOrKaryawan = role === 'Manager' || role === 'Ass Super Admin' || role === 'Karyawan';
 
   // Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);

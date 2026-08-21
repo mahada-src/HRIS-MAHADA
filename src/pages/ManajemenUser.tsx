@@ -186,6 +186,7 @@ export default function ManajemenUser() {
                   <option value="Karyawan">Karyawan (Hanya lihat data sendiri)</option>
                   <option value="Manager">Manager (Bisa lihat data timnya)</option>
                   <option value="HR">HR (Akses penuh HRIS)</option>
+                  <option value="Ass Super Admin">Ass Super Admin (Akses penuh, tanpa manajemen user)</option>
                   <option value="Super Admin">Super Admin (Akses penuh & Pengaturan)</option>
                 </select>
               </div>

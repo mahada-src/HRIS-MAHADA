@@ -45,12 +45,12 @@ export default function Administrasi() {
         filteredDocs = filteredDocs.filter(doc => {
           const isRoleMatch = doc.access_role === 'Semua Karyawan' || 
                               doc.access_role === role || 
-                              (role === 'Manager' && doc.access_role === 'Karyawan');
+                              ((role === 'Manager' || role === 'Ass Super Admin') && doc.access_role === 'Karyawan');
                               
           let isPositionMatch = doc.position === 'Semua Jabatan' || 
                                 doc.position === positionTitle;
 
-          if (role === 'Manager' && !isPositionMatch && doc.position !== 'Semua Jabatan') {
+          if ((role === 'Manager' || role === 'Ass Super Admin') && !isPositionMatch && doc.position !== 'Semua Jabatan') {
             const docPos = posRes.data?.find((p: any) => p.title === doc.position);
             if (docPos && (docPos as any).departments?.name === departmentName) {
               isPositionMatch = true;
@@ -261,6 +261,7 @@ export default function Administrasi() {
                       <option value="Super Admin">Super Admin</option>
                       <option value="HR">HR</option>
                       <option value="Manager">Manager</option>
+                      <option value="Ass Super Admin">Ass Super Admin</option>
                     </select>
                   </div>
 

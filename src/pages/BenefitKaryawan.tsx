@@ -7,7 +7,7 @@ import { useAuth } from '../lib/AuthContext';
 export default function BenefitKaryawan() {
   const { employee: currentUser } = useAuth();
   const role = currentUser?.role || 'Karyawan';
-  const isManagerOrKaryawan = role === 'Manager' || role === 'Karyawan';
+  const isManagerOrKaryawan = role === 'Manager' || role === 'Ass Super Admin' || role === 'Karyawan';
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 

@@ -33,7 +33,7 @@ export default function PengajuanLembur() {
   const { employee: currentEmployee } = useAuth();
   const isAdmin = currentEmployee?.role === 'HR' || currentEmployee?.role === 'Super Admin';
   const role = currentEmployee?.role || 'Karyawan';
-  const isManager = role === 'Manager';
+  const isManager = role === 'Manager' || role === 'Ass Super Admin';
   const isKaryawan = role === 'Karyawan';
 
   // Preview Pekerjaan Modal

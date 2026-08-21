@@ -9,7 +9,7 @@ import { useAuth } from '../lib/AuthContext';
 export default function IkatanDinas() {
   const { employee: currentUser } = useAuth();
   const role = currentUser?.role || 'Karyawan';
-  const isManagerOrKaryawan = role === 'Manager' || role === 'Karyawan';
+  const isManagerOrKaryawan = role === 'Manager' || role === 'Ass Super Admin' || role === 'Karyawan';
   const [data, setData] = useState<any[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
