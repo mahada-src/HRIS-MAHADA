@@ -98,21 +98,28 @@ export default function PengajuanCuti() {
     }
   };
 
-  const handleUpdateStatus = async (id: string, newStatus: string, empId: string, date: string) => {
+  const handleUpdateStatus = async (id: string, newStatus: string, empId: string, startDate: string, endDate: string) => {
     const { error } = await supabase.from('leave_requests').update({ status: newStatus }).eq('id', id);
     if (!error) {
       // Jika disetujui, update attendance
       if (newStatus === 'Disetujui') {
-        const check = await supabase.from('attendance').select('id').eq('employee_id', empId).eq('date', date).single();
-        if (check.data) {
-          await supabase.from('attendance').update({ status: 'Cuti', notes: 'Disetujui sistem' }).eq('id', check.data.id);
-        } else {
-          await supabase.from('attendance').insert([{
-            employee_id: empId,
-            date: date,
-            status: 'Cuti',
-            notes: 'Disetujui sistem'
-          }]);
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          const currentDateStr = d.toISOString().split('T')[0];
+          const check = await supabase.from('attendance').select('id').eq('employee_id', empId).eq('date', currentDateStr).single();
+          
+          if (check.data) {
+            await supabase.from('attendance').update({ status: 'Cuti', notes: 'Disetujui sistem' }).eq('id', check.data.id);
+          } else {
+            await supabase.from('attendance').insert([{
+              employee_id: empId,
+              date: currentDateStr,
+              status: 'Cuti',
+              notes: 'Disetujui sistem'
+            }]);
+          }
         }
       }
       fetchData();
@@ -291,8 +298,8 @@ export default function PengajuanCuti() {
                     <TableCell className="text-right">
                       {item.status === 'Menunggu Persetujuan' && (isAdmin || currentEmployee?.role === 'Manager') && (
                         <div className="flex justify-end gap-2">
-                          <Button size="sm" variant="outline" className="text-emerald-600 hover:text-emerald-700 border-emerald-200" onClick={() => handleUpdateStatus(item.id, 'Disetujui', item.employee_id, item.start_date)}><Check className="w-4 h-4" /></Button>
-                          <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 border-red-200" onClick={() => handleUpdateStatus(item.id, 'Ditolak', item.employee_id, item.start_date)}><XCircle className="w-4 h-4" /></Button>
+                          <Button size="sm" variant="outline" className="text-emerald-600 hover:text-emerald-700 border-emerald-200" onClick={() => handleUpdateStatus(item.id, 'Disetujui', item.employee_id, item.start_date, item.end_date)}><Check className="w-4 h-4" /></Button>
+                          <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 border-red-200" onClick={() => handleUpdateStatus(item.id, 'Ditolak', item.employee_id, item.start_date, item.end_date)}><XCircle className="w-4 h-4" /></Button>
                         </div>
                       )}
                     </TableCell>

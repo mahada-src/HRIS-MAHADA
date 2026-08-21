@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { supabase } from '../../lib/supabase';
 import { Employee } from '../../types';
 import { useAuth } from '../../lib/AuthContext';
-import { Plus, X, Check, XCircle, Edit2, Eye } from 'lucide-react';
+import { Plus, X, Check, XCircle, Edit2, Eye, Download } from 'lucide-react';
 
 const calculateDuration = (start: string, end: string) => {
   if (!start || !end) return 0;
@@ -26,7 +26,7 @@ export default function PengajuanLembur() {
   // Filters
   const [filterMonth, setFilterMonth] = useState((new Date().getMonth() + 1).toString().padStart(2, '0'));
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
-  const [searchName, setSearchName] = useState('');
+  const [filterEmployeeId, setFilterEmployeeId] = useState('');
   
   // Form State
   const [employeeId, setEmployeeId] = useState('');
@@ -60,7 +60,7 @@ export default function PengajuanLembur() {
   }, []);
 
   const fetchEmployees = async () => {
-    let query = supabase.from('employees').select('id, full_name, employee_code, department_id').order('full_name');
+    let query = supabase.from('employees').select('id, full_name, employee_code, department_id, status_karyawan').order('full_name');
     if (isKaryawan) {
       query = query.eq('id', currentEmployee?.id);
     } else if (isManager) {
@@ -154,16 +154,51 @@ export default function PengajuanLembur() {
   };
 
   const filteredData = data.filter(item => {
-    const matchName = item.employees?.full_name?.toLowerCase().includes(searchName.toLowerCase());
+    const matchEmployee = filterEmployeeId === '' || item.employee_id === filterEmployeeId;
     const itemDate = new Date(item.date);
     const matchMonth = (itemDate.getMonth() + 1).toString().padStart(2, '0') === filterMonth;
     const matchYear = itemDate.getFullYear().toString() === filterYear;
-    return matchName && matchMonth && matchYear;
+    return matchEmployee && matchMonth && matchYear;
   }).sort((a, b) => {
     const dateA = new Date(a.date || a.start_date || 0).getTime();
     const dateB = new Date(b.date || b.start_date || 0).getTime();
     return dateB - dateA;
   });
+
+  const totalHariLembur = new Set(filteredData.map(item => `${item.employee_id}_${item.date}`)).size;
+  const totalDurasiMenit = filteredData.reduce((total, item) => total + calculateDuration(item.start_time, item.end_time), 0);
+  const totalMenitEfektif = filteredData.reduce((total, item) => total + (item.menit_efektif || 0), 0);
+
+  const handleDownload = () => {
+    const headers = ['No. Ref', 'NIK', 'Nama Karyawan', 'Tanggal', 'Jam Mulai', 'Jam Selesai', 'Durasi (Menit)', 'Target Pekerjaan', 'Menit Efektif', 'Status'];
+    const csvData = filteredData.map(item => [
+      `REQ-${item.id.substring(0, 6).toUpperCase()}`,
+      item.employees?.employee_code || '',
+      `"${item.employees?.full_name || ''}"`,
+      new Date(item.date).toLocaleDateString('id-ID'),
+      item.start_time,
+      item.end_time,
+      calculateDuration(item.start_time, item.end_time),
+      `"${(item.target_work || '').replace(/"/g, '""')}"`,
+      item.menit_efektif || 0,
+      item.status
+    ]);
+    
+    const csvContent = [headers.join(','), ...csvData.map(row => row.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    const monthName = new Date(0, parseInt(filterMonth) - 1).toLocaleString('id-ID', { month: 'long' });
+    let empName = "Semua Karyawan";
+    if (filterEmployeeId) {
+       const emp = employees.find(e => e.id === filterEmployeeId);
+       if (emp) empName = emp.full_name;
+    }
+    link.download = `Rekapan Lembur - ${empName} - ${monthName} ${filterYear}.csv`;
+    link.click();
+  };
 
   return (
     <div className="space-y-6">
@@ -177,24 +212,56 @@ export default function PengajuanLembur() {
         </Button>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
+        <Card className="bg-emerald-50 border-emerald-100 shadow-sm">
+          <CardContent className="p-4 flex flex-col justify-center">
+            <div className="text-sm text-emerald-600 font-medium">Jumlah Hari Lembur</div>
+            <div className="text-2xl font-bold text-emerald-800">{totalHariLembur} <span className="text-sm font-normal text-emerald-600">Hari</span></div>
+          </CardContent>
+        </Card>
+        <Card className="bg-blue-50 border-blue-100 shadow-sm">
+          <CardContent className="p-4 flex flex-col justify-center">
+            <div className="text-sm text-blue-600 font-medium">Jumlah Durasi Menit</div>
+            <div className="text-2xl font-bold text-blue-800">{totalDurasiMenit} <span className="text-sm font-normal text-blue-600">Menit</span></div>
+          </CardContent>
+        </Card>
+        <Card className="bg-amber-50 border-amber-100 shadow-sm">
+          <CardContent className="p-4 flex flex-col justify-center">
+            <div className="text-sm text-amber-600 font-medium">Jumlah Menit Efektif</div>
+            <div className="text-2xl font-bold text-amber-800">{totalMenitEfektif} <span className="text-sm font-normal text-amber-600">Menit</span></div>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="flex flex-col sm:flex-row gap-4 justify-between bg-white p-4 rounded-xl shadow-sm border border-slate-100">
         <div className="flex flex-col sm:flex-row gap-2">
-          <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white">
             {Array.from({ length: 12 }, (_, i) => {
               const month = (i + 1).toString().padStart(2, '0');
               return <option key={month} value={month}>{new Date(0, i).toLocaleString('id-ID', { month: 'long' })}</option>;
             })}
           </select>
-          <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white">
             {Array.from({ length: 5 }, (_, i) => {
               const year = (new Date().getFullYear() - i).toString();
               return <option key={year} value={year}>{year}</option>;
             })}
           </select>
-          <input type="text" placeholder="Cari Nama Karyawan..." value={searchName} onChange={(e) => setSearchName(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 min-w-[200px]" />
+          <select value={filterEmployeeId} onChange={(e) => setFilterEmployeeId(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white min-w-[200px]">
+            <option value="">Semua Karyawan</option>
+            {employees.filter(emp => emp.status_karyawan === 'Aktif' || !emp.status_karyawan).map(emp => (
+              <option key={emp.id} value={emp.id}>{emp.full_name}</option>
+            ))}
+          </select>
         </div>
-        <div className="bg-emerald-50 text-emerald-800 px-4 py-2 rounded-lg font-semibold text-sm flex items-center border border-emerald-100">
-          Total Pengajuan: {filteredData.length}
+        <div className="flex items-center gap-3">
+          <Button variant="outline" className="text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={handleDownload}>
+            <Download className="w-4 h-4 mr-2" />
+            Download Rekapan
+          </Button>
+          <div className="bg-emerald-50 text-emerald-800 px-4 py-2 rounded-lg font-semibold text-sm flex items-center border border-emerald-100">
+            Total Pengajuan: {filteredData.length}
+          </div>
         </div>
       </div>
 
