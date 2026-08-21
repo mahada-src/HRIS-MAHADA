@@ -403,44 +403,6 @@ export default function DetailData() {
           
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Clock className="h-4 w-4" /> Riwayat Absensi Terakhir</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {attendance.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                    <thead className="text-xs text-slate-500 bg-slate-50 uppercase">
-                      <tr>
-                        <th className="px-4 py-2 rounded-l-lg">Tanggal</th>
-                        <th className="px-4 py-2">Check In</th>
-                        <th className="px-4 py-2">Check Out</th>
-                        <th className="px-4 py-2 rounded-r-lg">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {attendance.map(a => (
-                        <tr key={a.id} className="border-b border-slate-50 last:border-0">
-                          <td className="px-4 py-3 font-medium text-slate-800">{new Date(a.date).toLocaleDateString('id-ID')}</td>
-                          <td className="px-4 py-3">{a.check_in ? new Date(a.check_in).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : '-'}</td>
-                          <td className="px-4 py-3">{a.check_out ? new Date(a.check_out).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : '-'}</td>
-                          <td className="px-4 py-3">
-                            <span className="inline-flex rounded-md bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/10">
-                              {a.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-sm text-slate-500 italic">Belum ada riwayat absensi</p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
               <CardTitle className="flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Riwayat Pelanggaran</CardTitle>
             </CardHeader>
             <CardContent>

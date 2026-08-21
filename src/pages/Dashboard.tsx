@@ -81,29 +81,53 @@ export default function Dashboard() {
       attQuery = attQuery.eq('employees.department_id', departmentId);
     }
 
-    // Menunggu persetujuan
-    const requestTables = [
-      { table: 'sick_requests', type: 'Sakit' },
-      { table: 'permission_requests', type: 'Izin' },
-      { table: 'late_requests', type: 'Telat' },
-      { table: 'half_day_requests', type: 'Izin Setengah Hari' },
-      { table: 'leave_requests', type: 'Cuti' },
-      { table: 'wfh_requests', type: 'WFH' },
-      { table: 'overtime_requests', type: 'Lembur' }
+    // Menunggu persetujuan dan Data pengajuan untuk chart
+    const requestTablesConfig = [
+      { table: 'sick_requests', type: 'Sakit', label: 'Sakit', dateCol: 'start_date' },
+      { table: 'permission_requests', type: 'Izin', label: 'Izin Full', dateCol: 'date' },
+      { table: 'half_day_requests', type: 'Izin Setengah Hari', label: 'Izin 1/2', dateCol: 'date' },
+      { table: 'one_third_day_requests', type: 'Izin Sepertiga Hari', label: 'Izin 1/3', dateCol: 'date' },
+      { table: 'late_requests', type: 'Telat', label: 'Telat', dateCol: 'date' },
+      { table: 'wfh_requests', type: 'WFH', label: 'WFH', dateCol: 'date' },
+      { table: 'leave_requests', type: 'Cuti', label: 'Cuti', dateCol: 'start_date' },
+      { table: 'overtime_requests', type: 'Lembur', label: 'Lembur', dateCol: 'date' }
     ];
 
-    const [emp, att, ...reqResults] = await Promise.all([
+    // Investasi Ikatan Dinas
+    let invQuery = supabase.from('business_trip_bonds').select('nominal, employees!inner(department_id)');
+    if (role === 'Karyawan') {
+      invQuery = invQuery.eq('employee_id', currentUser?.id);
+    } else if (departmentId !== 'all') {
+      invQuery = invQuery.eq('employees.department_id', departmentId);
+    }
+
+    // Pelanggaran Aktif
+    let violQuery = supabase.from('violations').select('date, employees!inner(department_id)');
+    if (role === 'Karyawan') {
+      violQuery = violQuery.eq('employee_id', currentUser?.id);
+    } else if (departmentId !== 'all') {
+      violQuery = violQuery.eq('employees.department_id', departmentId);
+    }
+
+    const [emp, att, invResult, violResult, ...reqResults] = await Promise.all([
       empQuery,
       attQuery,
-      ...requestTables.map(async (rt) => {
-        let query = supabase.from(rt.table).select('*, employees!inner(full_name, department_id)').eq('status', 'Menunggu Persetujuan').limit(50);
+      invQuery,
+      violQuery,
+      ...requestTablesConfig.map(async (rt) => {
+        let qPending = supabase.from(rt.table).select('*, employees!inner(full_name, department_id)').eq('status', 'Menunggu Persetujuan');
+        let qPeriod = supabase.from(rt.table).select('*, employees!inner(full_name, department_id)').gte(rt.dateCol, startDate).lte(rt.dateCol, endDate);
+        
         if (role === 'Karyawan') {
-          query = query.eq('employee_id', currentUser?.id);
+          qPending = qPending.eq('employee_id', currentUser?.id);
+          qPeriod = qPeriod.eq('employee_id', currentUser?.id);
         } else if (departmentId !== 'all') {
-          query = query.eq('employees.department_id', departmentId);
+          qPending = qPending.eq('employees.department_id', departmentId);
+          qPeriod = qPeriod.eq('employees.department_id', departmentId);
         }
-        const { data } = await query;
-        return (data || []).map(d => ({ ...d, requestType: rt.type }));
+        
+        const [resPending, resPeriod] = await Promise.all([qPending, qPeriod]);
+        return { config: rt, pendingData: resPending.data || [], periodData: resPeriod.data || [] };
       })
     ]);
 
@@ -129,14 +153,20 @@ export default function Dashboard() {
     const hadirCount = todayAtt.filter(a => a.status === 'Hadir').length;
     const telatCount = todayAtt.filter(a => a.status === 'Telat').length;
 
-    // Rekap Absensi Chart
+    // Rekap Absensi Chart (Berdasarkan Pengajuan)
     const statusCounts: Record<string, number> = {
-      'Hadir': 0, 'Sakit': 0, 'Izin': 0, 'Telat': 0, 'Cuti': 0, 'Lembur': 0, 'Setengah Hari': 0, 'WFH': 0
+      'Sakit': 0, 'Izin Full': 0, 'Izin 1/2': 0, 'Izin 1/3': 0, 'Telat': 0, 'WFH': 0, 'Cuti': 0, 'Lembur': 0
     };
-    allAtt.forEach(a => {
-      if (statusCounts[a.status] !== undefined) {
-        statusCounts[a.status]++;
-      }
+
+    let allPending: any[] = [];
+    
+    reqResults.forEach(res => {
+      // Add to pending list
+      const pendingItems = res.pendingData.map((d: any) => ({ ...d, requestType: res.config.type }));
+      allPending = allPending.concat(pendingItems);
+      
+      // Count for period chart
+      statusCounts[res.config.label] += res.periodData.length;
     });
 
     const chartData = Object.keys(statusCounts).map(key => ({
@@ -145,14 +175,25 @@ export default function Dashboard() {
     })).filter(item => item.total > 0);
     setAttendanceData(chartData);
 
-    const allPending = reqResults.flat().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    allPending.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     const pendingCount = allPending.length;
+
+    const invData = invResult.data || [];
+    const totalInvestasi = invData.reduce((acc: number, curr: any) => acc + (parseFloat(curr.nominal) || 0), 0);
+    const formatRupiah = (angka: number) => {
+      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+    };
+
+    const violData = violResult.data || [];
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const activeViolationsCount = violData.filter((v: any) => new Date(v.date) >= sixMonthsAgo).length;
 
     setStats([
       { title: 'Total Karyawan', value: activeEmpCount.toString(), subtitle: 'Karyawan Aktif', subtitleColor: 'text-emerald-600' },
-      { title: 'Hadir Hari Ini', value: hadirCount.toString(), subtitle: 'Sesuai Jadwal', subtitleColor: 'text-emerald-600' },
       { title: 'Perlu Persetujuan', value: pendingCount.toString(), subtitle: 'Pengajuan Aktif', subtitleColor: 'text-amber-600' },
-      { title: 'Terlambat', value: telatCount.toString(), subtitle: 'Hari Ini', subtitleColor: 'text-red-600' },
+      { title: 'Total Pelanggaran', value: activeViolationsCount.toString(), subtitle: 'Pelanggaran Aktif', subtitleColor: 'text-red-600' },
+      { title: 'Investasi', value: formatRupiah(totalInvestasi), subtitle: role === 'Super Admin' && departmentId === 'all' ? 'Total Seluruh' : 'Total Departemen', subtitleColor: 'text-blue-600' },
     ]);
 
     setRecentRequests(allPending.slice(0, 10));
@@ -252,7 +293,15 @@ export default function Dashboard() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <Card key={stat.title}>
+          <Card 
+            key={stat.title}
+            className={stat.title === 'Perlu Persetujuan' ? "cursor-pointer hover:bg-slate-50 transition-colors" : ""}
+            onClick={() => {
+              if (stat.title === 'Perlu Persetujuan') {
+                document.getElementById('pending-requests-section')?.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+          >
             <CardContent className="p-5">
               <p className="mb-1 text-xs font-semibold tracking-wider text-slate-500 uppercase">{stat.title}</p>
               <h3 className="text-3xl font-bold text-slate-800">{stat.value}</h3>
@@ -316,7 +365,7 @@ export default function Dashboard() {
         </Card>
       </div>
       
-      <Card>
+      <Card id="pending-requests-section">
         <CardHeader className="border-b border-slate-100 p-4">
           <CardTitle className="text-sm font-bold text-slate-700">Pengajuan Menunggu Persetujuan</CardTitle>
         </CardHeader>

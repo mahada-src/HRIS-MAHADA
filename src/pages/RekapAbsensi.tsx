@@ -14,11 +14,13 @@ export default function RekapAbsensi() {
   const [attendances, setAttendances] = useState<any[]>([]);
   const [workingDays, setWorkingDays] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [departments, setDepartments] = useState<any[]>([]);
   
   // Filters
   const [month, setMonth] = useState((new Date().getMonth() + 1).toString());
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [search, setSearch] = useState('');
+  const [filterDept, setFilterDept] = useState('all');
 
   // Form State
   const [showModal, setShowModal] = useState(false);
@@ -44,6 +46,11 @@ export default function RekapAbsensi() {
     }
     const { data: empData } = await empQuery;
     if (empData) setEmployees(empData);
+
+    if (!isManagerOrKaryawan) {
+      const { data: deptData } = await supabase.from('departments').select('id, name').order('name');
+      if (deptData) setDepartments(deptData);
+    }
     
     // Calculate period: 21st of prev month to 20th of current month
     const m = parseInt(month);
@@ -201,10 +208,12 @@ export default function RekapAbsensi() {
         cuti
       };
     }).filter(emp => {
-      return emp.full_name.toLowerCase().includes(search.toLowerCase()) || 
-             emp.employee_code.toLowerCase().includes(search.toLowerCase());
+      const matchSearch = emp.full_name.toLowerCase().includes(search.toLowerCase()) || 
+                          emp.employee_code.toLowerCase().includes(search.toLowerCase());
+      const matchDept = filterDept === 'all' || emp.department_id === filterDept;
+      return matchSearch && matchDept;
     });
-  }, [employees, attendances, workingDays, search]);
+  }, [employees, attendances, workingDays, search, filterDept]);
 
   const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
@@ -255,6 +264,21 @@ export default function RekapAbsensi() {
           </select>
         </div>
         
+        {!isManagerOrKaryawan && departments.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 shadow-sm w-full lg:w-auto">
+            <select
+              value={filterDept}
+              onChange={e => setFilterDept(e.target.value)}
+              className="bg-transparent text-sm font-medium border-none focus:ring-0 cursor-pointer text-slate-700 w-full"
+            >
+              <option value="all">Semua Departemen</option>
+              {departments.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div className="relative flex-1 lg:max-w-xs">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
           <input
