@@ -59,13 +59,62 @@ export default function RekapAbsensi() {
     const startDate = `${prevYear}-${prevMonth.toString().padStart(2, '0')}-21`;
     const endDate = `${y}-${m.toString().padStart(2, '0')}-20`;
 
-    // Fetch Attendance within period
-    const { data: attData } = await supabase
-      .from('attendance')
-      .select('employee_id, status, date')
-      .gte('date', startDate)
-      .lte('date', endDate);
-    if (attData) setAttendances(attData);
+    // Fetch Attendance from the 7 request tables
+    const queries = [
+      supabase.from('sick_requests').select('employee_id, start_date, end_date').eq('status', 'Disetujui').lte('start_date', endDate).gte('end_date', startDate),
+      supabase.from('leave_requests').select('employee_id, start_date, end_date').eq('status', 'Disetujui').lte('start_date', endDate).gte('end_date', startDate),
+      supabase.from('wfh_requests').select('employee_id, date').eq('status', 'Disetujui').gte('date', startDate).lte('date', endDate),
+      supabase.from('late_requests').select('employee_id, date').eq('status', 'Disetujui').gte('date', startDate).lte('date', endDate),
+      supabase.from('permission_requests').select('employee_id, date').eq('status', 'Disetujui').gte('date', startDate).lte('date', endDate),
+      supabase.from('half_day_requests').select('employee_id, date').eq('status', 'Disetujui').gte('date', startDate).lte('date', endDate),
+      supabase.from('one_third_day_requests').select('employee_id, date').eq('status', 'Disetujui').gte('date', startDate).lte('date', endDate)
+    ];
+
+    const results = await Promise.all(queries);
+    const [sickRes, leaveRes, wfhRes, lateRes, permRes, halfRes, thirdRes] = results;
+
+    const mergedAttendances: any[] = [];
+
+    const getDatesInRange = (startStr: string, endStr: string) => {
+      const dates = [];
+      let d = new Date(startStr);
+      const end = new Date(endStr);
+      while (d <= end) {
+        dates.push(d.toISOString().split('T')[0]);
+        d.setDate(d.getDate() + 1);
+      }
+      return dates;
+    };
+
+    if (sickRes.data) {
+      sickRes.data.forEach(item => {
+        const dates = getDatesInRange(item.start_date, item.end_date);
+        dates.forEach(d => {
+          if (d >= startDate && d <= endDate) {
+            mergedAttendances.push({ employee_id: item.employee_id, status: 'Sakit', date: d });
+          }
+        });
+      });
+    }
+
+    if (leaveRes.data) {
+      leaveRes.data.forEach(item => {
+        const dates = getDatesInRange(item.start_date, item.end_date);
+        dates.forEach(d => {
+          if (d >= startDate && d <= endDate) {
+            mergedAttendances.push({ employee_id: item.employee_id, status: 'Cuti', date: d });
+          }
+        });
+      });
+    }
+
+    if (wfhRes.data) wfhRes.data.forEach(item => mergedAttendances.push({ employee_id: item.employee_id, status: 'WFH', date: item.date }));
+    if (lateRes.data) lateRes.data.forEach(item => mergedAttendances.push({ employee_id: item.employee_id, status: 'Telat', date: item.date }));
+    if (permRes.data) permRes.data.forEach(item => mergedAttendances.push({ employee_id: item.employee_id, status: 'Izin', date: item.date }));
+    if (halfRes.data) halfRes.data.forEach(item => mergedAttendances.push({ employee_id: item.employee_id, status: 'Setengah Hari', date: item.date }));
+    if (thirdRes.data) thirdRes.data.forEach(item => mergedAttendances.push({ employee_id: item.employee_id, status: 'Izin 1/3 Hari', date: item.date }));
+
+    setAttendances(mergedAttendances);
 
     // Fetch Working Days
     const { data: wdData } = await supabase
