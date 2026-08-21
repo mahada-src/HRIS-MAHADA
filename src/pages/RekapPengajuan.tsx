@@ -91,31 +91,46 @@ export default function RekapPengajuan() {
     ]);
 
     // Build Rekap Absensi 
-    let mergedAttendances = (attRes.data || []).map(a => ({ status: a.status, date: a.date }));
+    let mergedAttendances: any[] = [];
     
-    const countDays = (start: string, end: string) => {
-      const s = new Date(start); const e = new Date(end);
-      const diffTime = Math.abs(e.getTime() - s.getTime());
-      return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    const getDatesInRange = (startStr: string, endStr: string) => {
+      const dates = [];
+      let d = new Date(startStr);
+      const end = new Date(endStr);
+      while (d <= end) {
+        dates.push(d.toISOString().split('T')[0]);
+        d.setDate(d.getDate() + 1);
+      }
+      return dates;
     };
 
-    const addDaysToMerged = (requests: any[], statusName: string, isDateCol = false) => {
-      if (!requests) return;
-      requests.forEach(req => {
-        if (isDateCol) {
-          mergedAttendances.push({ status: statusName, date: req.date });
-        } else {
-          const days = countDays(req.start_date, req.end_date);
-          for(let i=0; i<days; i++) mergedAttendances.push({ status: statusName, date: req.start_date });
-        }
+    if (sickRes.data) {
+      sickRes.data.forEach(item => {
+        const dates = getDatesInRange(item.start_date, item.end_date);
+        dates.forEach(d => {
+          if (d >= startStr && d <= endStr) {
+            mergedAttendances.push({ status: 'Sakit', date: d });
+          }
+        });
       });
-    };
+    }
 
-    addDaysToMerged(sickRes.data || [], 'Sakit', false);
-    addDaysToMerged(leaveRes.data || [], 'Cuti', false);
-    addDaysToMerged(permRes.data || [], 'Izin', true);
-    addDaysToMerged(halfRes.data || [], 'Setengah Hari', true);
-    addDaysToMerged(thirdRes.data || [], 'Izin 1/3 Hari', true);
+    if (leaveRes.data) {
+      leaveRes.data.forEach(item => {
+        const dates = getDatesInRange(item.start_date, item.end_date);
+        dates.forEach(d => {
+          if (d >= startStr && d <= endStr) {
+            mergedAttendances.push({ status: 'Cuti', date: d });
+          }
+        });
+      });
+    }
+
+    if (wfhRes.data) wfhRes.data.forEach(item => mergedAttendances.push({ status: 'WFH', date: item.date }));
+    if (lateRes.data) lateRes.data.forEach(item => mergedAttendances.push({ status: 'Telat', date: item.date }));
+    if (permRes.data) permRes.data.forEach(item => mergedAttendances.push({ status: 'Izin', date: item.date }));
+    if (halfRes.data) halfRes.data.forEach(item => mergedAttendances.push({ status: 'Setengah Hari', date: item.date }));
+    if (thirdRes.data) thirdRes.data.forEach(item => mergedAttendances.push({ status: 'Izin 1/3 Hari', date: item.date }));
 
     setAttendances(mergedAttendances);
     setWorkingDays(wdRes.data ? wdRes.data.working_days_count : 0);
@@ -161,6 +176,7 @@ export default function RekapPengajuan() {
   const getSummaryLine = () => {
     if (!selectedEmployee) return null;
     const telat = attendances.filter(a => a.status === 'Telat').length;
+    const wfh = attendances.filter(a => a.status === 'WFH').length;
     const sakit = attendances.filter(a => a.status === 'Sakit').length;
     const izin = attendances.filter(a => a.status === 'Izin').length;
     const setengah = attendances.filter(a => a.status === 'Setengah Hari').length;
@@ -168,7 +184,7 @@ export default function RekapPengajuan() {
     const cuti = attendances.filter(a => a.status === 'Cuti').length;
     const hadir = Math.max(0, workingDays - (sakit + izin));
     
-    return { hadir, telat, sakit, izin, setengah, sepertiga, cuti, workingDays };
+    return { hadir, telat, wfh, sakit, izin, setengah, sepertiga, cuti, workingDays };
   };
 
   const selectedEmpName = useMemo(() => {
@@ -208,9 +224,9 @@ export default function RekapPengajuan() {
     if (sum) {
       autoTable(doc, {
         startY: currentY,
-        head: [['Hari Kerja', 'Hadir', 'Sakit', 'Izin Full', 'Izin 1/2', 'Izin 1/3', 'Cuti', 'Telat']],
+        head: [['Hari Kerja', 'Hadir', 'Telat', 'WFH', 'Sakit', 'Izin Full', 'Izin 1/2', 'Izin 1/3', 'Cuti']],
         body: [[
-            sum.workingDays, sum.hadir, sum.sakit, sum.izin, sum.setengah, sum.sepertiga, sum.cuti, sum.telat
+            sum.workingDays, sum.hadir, sum.telat, sum.wfh, sum.sakit, sum.izin, sum.setengah, sum.sepertiga, sum.cuti
         ]],
         theme: 'grid',
         headStyles: { fillColor: [16, 185, 129] },
@@ -322,24 +338,26 @@ export default function RekapPengajuan() {
                     <tr>
                       <th className="px-4 py-3 font-medium">Hari Kerja</th>
                       <th className="px-4 py-3 font-medium">Hadir</th>
-                      <th className="px-4 py-3 font-medium">Sakit</th>
-                      <th className="px-4 py-3 font-medium">Izin Full</th>
-                      <th className="px-4 py-3 font-medium">Izin 1/2</th>
-                      <th className="px-4 py-3 font-medium">Izin 1/3</th>
-                      <th className="px-4 py-3 font-medium">Cuti</th>
-                      <th className="px-4 py-3 font-medium">Telat</th>
+                      <th className="px-4 py-3 font-medium text-amber-500">Telat</th>
+                      <th className="px-4 py-3 font-medium text-emerald-500">WFH</th>
+                      <th className="px-4 py-3 font-medium text-red-500">Sakit</th>
+                      <th className="px-4 py-3 font-medium text-blue-400">Izin Full</th>
+                      <th className="px-4 py-3 font-medium text-slate-500">Izin 1/2</th>
+                      <th className="px-4 py-3 font-medium text-orange-500">Izin 1/3</th>
+                      <th className="px-4 py-3 font-medium text-purple-500">Cuti</th>
                     </tr>
                  </thead>
                  <tbody className="divide-y divide-slate-100">
                     <tr className="hover:bg-slate-50/50">
                       <td className="px-4 py-4 font-semibold text-slate-800">{summary.workingDays}</td>
-                      <td className="px-4 py-4 text-emerald-600 font-medium">{summary.hadir}</td>
-                      <td className="px-4 py-4 text-blue-600 font-medium">{summary.sakit}</td>
-                      <td className="px-4 py-4 text-amber-600 font-medium">{summary.izin}</td>
-                      <td className="px-4 py-4 text-amber-600 font-medium">{summary.setengah}</td>
-                      <td className="px-4 py-4 text-amber-600 font-medium">{summary.sepertiga}</td>
-                      <td className="px-4 py-4 text-purple-600 font-medium">{summary.cuti}</td>
-                      <td className="px-4 py-4 text-red-600 font-medium">{summary.telat}</td>
+                      <td className="px-4 py-4 text-emerald-600 font-bold">{summary.hadir}</td>
+                      <td className="px-4 py-4 text-amber-500 font-bold">{summary.telat}</td>
+                      <td className="px-4 py-4 text-emerald-500 font-bold">{summary.wfh}</td>
+                      <td className="px-4 py-4 text-red-500 font-bold">{summary.sakit}</td>
+                      <td className="px-4 py-4 text-blue-400 font-bold">{summary.izin}</td>
+                      <td className="px-4 py-4 text-slate-500 font-bold">{summary.setengah}</td>
+                      <td className="px-4 py-4 text-orange-500 font-bold">{summary.sepertiga}</td>
+                      <td className="px-4 py-4 text-purple-500 font-bold">{summary.cuti}</td>
                     </tr>
                  </tbody>
                </table>
