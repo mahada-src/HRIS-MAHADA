@@ -41,6 +41,7 @@ const navigation = [
       { name: 'WFH', href: '/pengajuan/wfh' },
       { name: 'Cuti', href: '/pengajuan/cuti' },
       { name: 'Lembur', href: '/pengajuan/lembur' },
+      { name: 'Rekap Pengajuan', href: '/pengajuan/rekap' },
     ],
   },
   { name: 'Pengaturan', href: '/pengaturan', icon: Settings },

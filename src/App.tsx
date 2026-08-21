@@ -47,6 +47,7 @@ import PengajuanIzinSepertigaHari from './pages/pengajuan/IzinSepertigaHari';
 import PengajuanCuti from './pages/pengajuan/Cuti';
 import PengajuanWfh from './pages/pengajuan/Wfh';
 import PengajuanLembur from './pages/pengajuan/Lembur';
+import RekapPengajuan from './pages/RekapPengajuan';
 
 export default function App() {
   return (
@@ -75,6 +76,7 @@ export default function App() {
             <Route path="wfh" element={<PengajuanWfh />} />
             <Route path="cuti" element={<PengajuanCuti />} />
             <Route path="lembur" element={<PengajuanLembur />} />
+            <Route path="rekap" element={<RekapPengajuan />} />
           </Route>
         </Route>
       </Routes>

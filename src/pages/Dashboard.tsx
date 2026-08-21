@@ -189,10 +189,15 @@ export default function Dashboard() {
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
     const activeViolationsCount = violData.filter((v: any) => new Date(v.date) >= sixMonthsAgo).length;
 
+    const overtimeData = reqResults.find(r => r.config.table === 'overtime_requests')?.periodData || [];
+    const totalMenitEfektif = overtimeData.reduce((acc: number, curr: any) => acc + (curr.menit_efektif || 0), 0);
+    const biayaLembur = Math.floor(totalMenitEfektif * (15000 / 60));
+
     setStats([
       { title: 'Total Karyawan', value: activeEmpCount.toString(), subtitle: 'Karyawan Aktif', subtitleColor: 'text-emerald-600' },
       { title: 'Perlu Persetujuan', value: pendingCount.toString(), subtitle: 'Pengajuan Aktif', subtitleColor: 'text-amber-600' },
       { title: 'Total Pelanggaran', value: activeViolationsCount.toString(), subtitle: 'Pelanggaran Aktif', subtitleColor: 'text-red-600' },
+      { title: 'Biaya Lembur', value: formatRupiah(biayaLembur), subtitle: 'Bulan Ini', subtitleColor: 'text-purple-600' },
       { title: 'Investasi', value: formatRupiah(totalInvestasi), subtitle: role === 'Super Admin' && departmentId === 'all' ? 'Total Seluruh' : 'Total Departemen', subtitleColor: 'text-blue-600' },
     ]);
 
@@ -291,7 +296,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {stats.map((stat) => (
           <Card 
             key={stat.title}

@@ -224,7 +224,7 @@ export default function PengajuanLembur() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-2">
         <Card className="bg-emerald-50 border-emerald-100 shadow-sm">
           <CardContent className="p-4 flex flex-col justify-center">
             <div className="text-sm text-emerald-600 font-medium">Jumlah Hari Lembur</div>
@@ -241,6 +241,15 @@ export default function PengajuanLembur() {
           <CardContent className="p-4 flex flex-col justify-center">
             <div className="text-sm text-amber-600 font-medium">Jumlah Menit Efektif</div>
             <div className="text-2xl font-bold text-amber-800">{totalMenitEfektif} <span className="text-sm font-normal text-amber-600">Menit</span></div>
+          </CardContent>
+        </Card>
+        <Card className="bg-purple-50 border-purple-100 shadow-sm">
+          <CardContent className="p-4 flex flex-col justify-center">
+            <div className="text-sm text-purple-600 font-medium">Biaya Lembur</div>
+            <div className="text-2xl font-bold text-purple-800">
+              <span className="text-sm font-normal text-purple-600 mr-1">Rp</span>
+              {new Intl.NumberFormat('id-ID').format(Math.floor(totalMenitEfektif * (15000 / 60)))}
+            </div>
           </CardContent>
         </Card>
       </div>
