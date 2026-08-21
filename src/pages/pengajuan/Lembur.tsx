@@ -60,7 +60,7 @@ export default function PengajuanLembur() {
   }, []);
 
   const fetchEmployees = async () => {
-    let query = supabase.from('employees').select('id, full_name, employee_code, department_id, status_karyawan').order('full_name');
+    let query = supabase.from('employees').select('id, full_name, employee_code, department_id, employment_status').order('full_name');
     if (isKaryawan) {
       query = query.eq('id', currentEmployee?.id);
     } else if (isManager) {
@@ -209,7 +209,9 @@ export default function PengajuanLembur() {
        if (emp) empName = emp.full_name;
     }
     link.download = `Rekapan Lembur - ${empName} - ${monthName} ${filterYear}.csv`;
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -270,7 +272,7 @@ export default function PengajuanLembur() {
           </select>
           <select value={filterEmployeeId} onChange={(e) => setFilterEmployeeId(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white min-w-[200px]">
             <option value="">Semua Karyawan</option>
-            {employees.filter(emp => emp.status_karyawan === 'Aktif' || !emp.status_karyawan).map(emp => (
+            {employees.filter(emp => emp.employment_status !== 'Resign').map(emp => (
               <option key={emp.id} value={emp.id}>{emp.full_name}</option>
             ))}
           </select>
