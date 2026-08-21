@@ -80,10 +80,18 @@ export default function RekapPengajuan() {
 
   const fetchData = async () => {
     setLoading(true);
-    let startD = new Date(Number(year), Number(month) - 2, 21);
-    let endD = new Date(Number(year), Number(month) - 1, 20);
-    const startStr = startD.toISOString().split('T')[0];
-    const endStr = endD.toISOString().split('T')[0];
+    const m = parseInt(month);
+    const y = parseInt(year);
+    
+    let prevMonth = m - 1;
+    let prevYear = y;
+    if (prevMonth === 0) {
+      prevMonth = 12;
+      prevYear -= 1;
+    }
+    
+    const startStr = `${prevYear}-${prevMonth.toString().padStart(2, '0')}-21`;
+    const endStr = `${y}-${m.toString().padStart(2, '0')}-20`;
 
     // 1. Fetch Attendances for summary
     const [
@@ -97,7 +105,7 @@ export default function RekapPengajuan() {
       supabase.from('one_third_day_requests').select('*, id, date, status, reason').eq('employee_id', selectedEmployee).gte('date', startStr).lte('date', endStr).eq('status', 'Disetujui'),
       supabase.from('wfh_requests').select('*, id, date, status, reason').eq('employee_id', selectedEmployee).gte('date', startStr).lte('date', endStr).eq('status', 'Disetujui'),
       supabase.from('late_requests').select('*, id, date, status, reason').eq('employee_id', selectedEmployee).gte('date', startStr).lte('date', endStr).eq('status', 'Disetujui'),
-      supabase.from('overtime_requests').select('*, id, date, status, notes').eq('employee_id', selectedEmployee).gte('date', startStr).lte('date', endStr),
+      supabase.from('overtime_requests').select('*').eq('employee_id', selectedEmployee).gte('date', startStr).lte('date', endStr),
       supabase.from('working_days').select('working_days_count').eq('employee_id', selectedEmployee).eq('period_month', month.padStart(2, '0')).eq('period_year', year).maybeSingle()
     ]);
 
