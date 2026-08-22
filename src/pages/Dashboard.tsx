@@ -21,6 +21,8 @@ export default function Dashboard() {
   const [deptData, setDeptData] = useState<any[]>([]);
   const [probationEvaluations, setProbationEvaluations] = useState<any[]>([]);
   const [internshipEvaluations, setInternshipEvaluations] = useState<any[]>([]);
+  const [deptLemburData, setDeptLemburData] = useState<any[]>([]);
+  const [personLemburData, setPersonLemburData] = useState<any[]>([]);
   
   // Filter state
   const [month, setMonth] = useState((new Date().getMonth() + 1).toString());
@@ -192,6 +194,26 @@ export default function Dashboard() {
     const overtimeData = reqResults.find(r => r.config.table === 'overtime_requests')?.periodData || [];
     const totalMenitEfektif = overtimeData.reduce((acc: number, curr: any) => acc + (curr.menit_efektif || 0), 0);
     const biayaLembur = Math.floor(totalMenitEfektif * (15000 / 60));
+
+    const { data: deptsList } = await supabase.from('departments').select('id, name');
+    const depts = deptsList || [];
+    const deptLemburMap: Record<string, number> = {};
+    const personLemburMap: Record<string, number> = {};
+
+    overtimeData.forEach((req: any) => {
+        const nominal = (req.menit_efektif || 0) * (15000 / 60);
+        if (nominal > 0) {
+            const deptId = req.employees?.department_id;
+            const deptName = depts.find(d => d.id === deptId)?.name || 'Unknown';
+            const personName = req.employees?.full_name || 'Unknown';
+
+            deptLemburMap[deptName] = (deptLemburMap[deptName] || 0) + nominal;
+            personLemburMap[personName] = (personLemburMap[personName] || 0) + nominal;
+        }
+    });
+
+    setDeptLemburData(Object.entries(deptLemburMap).map(([name, total]) => ({ name, total })).sort((a, b) => b.total - a.total));
+    setPersonLemburData(Object.entries(personLemburMap).map(([name, total]) => ({ name, total })).sort((a, b) => b.total - a.total));
 
     setStats([
       { title: 'Total Karyawan', value: activeEmpCount.toString(), subtitle: 'Karyawan Aktif', subtitleColor: 'text-emerald-600' },
@@ -370,6 +392,54 @@ export default function Dashboard() {
         </Card>
       </div>
       
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+        <Card className="flex flex-col">
+          <CardHeader className="border-b border-slate-100 p-4">
+            <CardTitle className="text-sm font-bold text-slate-700">Nominal Lembur per Departemen</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="h-[300px] w-full">
+              {deptLemburData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={deptLemburData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(value) => `Rp${value / 1000}k`} />
+                    <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} formatter={(value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value)} />
+                    <Bar dataKey="total" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={40} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-slate-400">Belum ada data lembur</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="flex flex-col">
+          <CardHeader className="border-b border-slate-100 p-4">
+            <CardTitle className="text-sm font-bold text-slate-700">Nominal Lembur per Orang</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="h-[300px] w-full">
+              {personLemburData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={personLemburData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(value) => `Rp${value / 1000}k`} />
+                    <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} formatter={(value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value)} />
+                    <Bar dataKey="total" fill="#ec4899" radius={[4, 4, 0, 0]} barSize={40} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-slate-400">Belum ada data lembur</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card id="pending-requests-section">
         <CardHeader className="border-b border-slate-100 p-4">
           <CardTitle className="text-sm font-bold text-slate-700">Pengajuan Menunggu Persetujuan</CardTitle>
