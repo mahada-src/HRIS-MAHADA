@@ -198,22 +198,30 @@ export default function Dashboard() {
     const { data: deptsList } = await supabase.from('departments').select('id, name');
     const depts = deptsList || [];
     const deptLemburMap: Record<string, number> = {};
-    const personLemburMap: Record<string, number> = {};
+    const personLemburMap: Record<string, { total: number, name: string, fullName: string }> = {};
 
     overtimeData.forEach((req: any) => {
         const nominal = (req.menit_efektif || 0) * (15000 / 60);
         if (nominal > 0) {
             const deptId = req.employees?.department_id;
             const deptName = depts.find(d => d.id === deptId)?.name || 'Unknown';
-            const personName = req.employees?.full_name || 'Unknown';
+            const fullName = req.employees?.full_name || 'Unknown';
 
             deptLemburMap[deptName] = (deptLemburMap[deptName] || 0) + nominal;
-            personLemburMap[personName] = (personLemburMap[personName] || 0) + nominal;
+            
+            if (!personLemburMap[fullName]) {
+                personLemburMap[fullName] = { 
+                    total: 0, 
+                    name: fullName.split(' ')[0], 
+                    fullName 
+                };
+            }
+            personLemburMap[fullName].total += nominal;
         }
     });
 
     setDeptLemburData(Object.entries(deptLemburMap).map(([name, total]) => ({ name, total })).sort((a, b) => b.total - a.total));
-    setPersonLemburData(Object.entries(personLemburMap).map(([name, total]) => ({ name, total })).sort((a, b) => b.total - a.total));
+    setPersonLemburData(Object.values(personLemburMap).sort((a, b) => b.total - a.total));
 
     setStats([
       { title: 'Total Karyawan', value: activeEmpCount.toString(), subtitle: 'Karyawan Aktif', subtitleColor: 'text-emerald-600' },
@@ -416,49 +424,49 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="flex flex-col">
+        <Card id="pending-requests-section" className="flex flex-col">
           <CardHeader className="border-b border-slate-100 p-4">
-            <CardTitle className="text-sm font-bold text-slate-700">Nominal Lembur per Orang</CardTitle>
+            <CardTitle className="text-sm font-bold text-slate-700">Pengajuan Menunggu Persetujuan</CardTitle>
           </CardHeader>
-          <CardContent className="p-4">
-            <div className="h-[300px] w-full">
-              {personLemburData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={personLemburData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(value) => `Rp${value / 1000}k`} />
-                    <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} formatter={(value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value)} />
-                    <Bar dataKey="total" fill="#ec4899" radius={[4, 4, 0, 0]} barSize={40} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-slate-400">Belum ada data lembur</div>
+          <CardContent className="p-4 flex-1 overflow-auto max-h-[332px]">
+            <div className="grid sm:grid-cols-1 gap-4">
+              {recentRequests.length > 0 ? recentRequests.map((r, i) => (
+                <div key={i} className="flex flex-col p-3 rounded-lg border border-slate-100 bg-slate-50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                      {r.requestType}
+                    </span>
+                    <span className="text-xs text-slate-400 ml-auto">{new Date(r.created_at).toLocaleDateString('id-ID')}</span>
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800">{r.employees?.full_name}</p>
+                  <p className="text-xs text-slate-500 mt-1 line-clamp-2">{r.reason || r.target_work || '-'}</p>
+                </div>
+              )) : (
+                <p className="text-sm text-slate-500 italic">Tidak ada pengajuan yang menunggu persetujuan.</p>
               )}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card id="pending-requests-section">
+      <Card className="flex flex-col">
         <CardHeader className="border-b border-slate-100 p-4">
-          <CardTitle className="text-sm font-bold text-slate-700">Pengajuan Menunggu Persetujuan</CardTitle>
+          <CardTitle className="text-sm font-bold text-slate-700">Nominal Lembur per Orang</CardTitle>
         </CardHeader>
         <CardContent className="p-4">
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {recentRequests.length > 0 ? recentRequests.map((r, i) => (
-              <div key={i} className="flex flex-col p-3 rounded-lg border border-slate-100 bg-slate-50">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                    {r.requestType}
-                  </span>
-                  <span className="text-xs text-slate-400 ml-auto">{new Date(r.created_at).toLocaleDateString('id-ID')}</span>
-                </div>
-                <p className="text-sm font-semibold text-slate-800">{r.employees?.full_name}</p>
-                <p className="text-xs text-slate-500 mt-1 line-clamp-2">{r.reason || r.target_work || '-'}</p>
-              </div>
-            )) : (
-              <p className="text-sm text-slate-500 italic col-span-3">Tidak ada pengajuan yang menunggu persetujuan.</p>
+          <div className="h-[300px] w-full">
+            {personLemburData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={personLemburData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(value) => `Rp${value / 1000}k`} />
+                  <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} formatter={(value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value)} labelFormatter={(label, payload) => payload?.[0]?.payload?.fullName || label} />
+                  <Bar dataKey="total" fill="#ec4899" radius={[4, 4, 0, 0]} barSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-slate-400">Belum ada data lembur</div>
             )}
           </div>
         </CardContent>
