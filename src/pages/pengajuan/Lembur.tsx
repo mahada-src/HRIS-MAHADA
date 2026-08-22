@@ -31,9 +31,9 @@ export default function PengajuanLembur() {
   // Form State
   const [employeeId, setEmployeeId] = useState('');
   const { employee: currentEmployee } = useAuth();
-  const isAdmin = currentEmployee?.role === 'HR' || currentEmployee?.role === 'Super Admin';
+  const isAdmin = currentEmployee?.role === 'HR' || currentEmployee?.role === 'Super Admin' || currentEmployee?.role === 'Ass Super Admin';
   const role = currentEmployee?.role || 'Karyawan';
-  const isManager = role === 'Manager' || role === 'Ass Super Admin';
+  const isManager = role === 'Manager';
   const isKaryawan = role === 'Karyawan';
 
   // Preview Pekerjaan Modal
@@ -133,7 +133,6 @@ export default function PengajuanLembur() {
           }]);
         }
       }
-      if (notifError) console.error(notifError);
       fetchData();
     }
   };
@@ -165,12 +164,29 @@ export default function PengajuanLembur() {
     }
   };
 
+  const selectedMonth = parseInt(filterMonth);
+  const selectedYear = parseInt(filterYear);
+  
+  let startYear = selectedYear;
+  let startMonth = selectedMonth - 1;
+  if (startMonth === 0) {
+    startMonth = 12;
+    startYear -= 1;
+  }
+  
+  const startDate = new Date(startYear, startMonth - 1, 21);
+  const endDate = new Date(selectedYear, selectedMonth - 1, 20, 23, 59, 59);
+
   const filteredData = data.filter(item => {
     const matchEmployee = filterEmployeeId === '' || item.employee_id === filterEmployeeId;
-    const itemDate = new Date(item.date);
-    const matchMonth = (itemDate.getMonth() + 1).toString().padStart(2, '0') === filterMonth;
-    const matchYear = itemDate.getFullYear().toString() === filterYear;
-    return matchEmployee && matchMonth && matchYear;
+    
+    // Safely parse date to avoid timezone offset issues
+    const [year, month, day] = item.date.split('-').map(Number);
+    const itemDate = new Date(year, month - 1, day);
+    
+    const isWithinRange = itemDate >= startDate && itemDate <= endDate;
+    
+    return matchEmployee && isWithinRange;
   }).sort((a, b) => {
     const dateA = new Date(a.date || a.start_date || 0).getTime();
     const dateB = new Date(b.date || b.start_date || 0).getTime();
@@ -447,7 +463,7 @@ export default function PengajuanLembur() {
                         ) : (
                           !isAdmin && <span className="text-slate-400 text-xs">-</span>
                         )}
-                        {isAdmin && (
+                        {isAdmin && item.status !== 'Disetujui' && (
                           <Button size="sm" variant="outline" className="text-pink-600 hover:text-pink-700 border-pink-200 hover:bg-pink-50" onClick={() => handleDelete(item.id, item.employee_id, item.date)}><Trash2 className="w-4 h-4" /></Button>
                         )}
                       </div>

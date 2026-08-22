@@ -21,9 +21,9 @@ export default function PengajuanIzinSepertigaHari() {
   // Form State
   const [employeeId, setEmployeeId] = useState('');
   const { employee: currentEmployee } = useAuth();
-  const isAdmin = currentEmployee?.role === 'HR' || currentEmployee?.role === 'Super Admin';
+  const isAdmin = currentEmployee?.role === 'HR' || currentEmployee?.role === 'Super Admin' || currentEmployee?.role === 'Ass Super Admin';
   const role = currentEmployee?.role || 'Karyawan';
-  const isManager = role === 'Manager' || role === 'Ass Super Admin';
+  const isManager = role === 'Manager';
   const isKaryawan = role === 'Karyawan';
 
   useEffect(() => {
