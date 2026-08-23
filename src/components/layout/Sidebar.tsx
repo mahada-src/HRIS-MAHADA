@@ -209,7 +209,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="absolute left-full top-0 flex w-16 justify-center pt-5">
+        <div className={cn("absolute left-full top-0 flex w-16 justify-center pt-5 transition-opacity duration-300 ease-in-out", open ? "opacity-100" : "opacity-0 pointer-events-none")}>
           <button type="button" className="-m-2.5 p-2.5" onClick={() => setOpen(false)}>
             <span className="sr-only">Close sidebar</span>
             <X className="h-6 w-6 text-white" aria-hidden="true" />

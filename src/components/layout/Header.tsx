@@ -29,7 +29,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
               placeholder="Cari data..."
               className="w-full rounded-full border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-4 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
             />
-            <div className="absolute left-3 top-2 text-slate-400">
+            <div className="pointer-events-none absolute left-3 top-2 text-slate-400">
               <Search className="h-4 w-4" />
             </div>
           </div>
