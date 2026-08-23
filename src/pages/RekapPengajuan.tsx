@@ -166,11 +166,19 @@ export default function RekapPengajuan() {
            dateDisplay = new Date(dateDisplay).toLocaleDateString('id-ID');
         }
         
+        let timeDisplay = '-';
+        if (type === 'Terlambat' && item.estimated_arrival) {
+          timeDisplay = item.estimated_arrival;
+        } else if ((type === 'Izin 1/2 Hari' || type === 'Izin 1/3 Hari') && item.start_time && item.end_time) {
+          timeDisplay = `${item.start_time} - ${item.end_time}`;
+        }
+
         combined.push({
           id: item.id,
           type: type,
           dateRaw: item[dateCol],
           dateDisplay,
+          timeDisplay,
           reason: item[reasonCol] || item.reason || item.notes || type,
           status: item.status
         });
@@ -184,7 +192,6 @@ export default function RekapPengajuan() {
     mapRequest(thirdRes.data || [], 'Izin 1/3 Hari', 'date', 'reason');
     mapRequest(wfhRes.data || [], 'WFH', 'date', 'reason');
     mapRequest(lateRes.data || [], 'Terlambat', 'date', 'reason');
-    mapRequest((overtimeRes.data || []).filter(r => r.status === 'Disetujui'), 'Lembur', 'date', 'notes');
 
     combined.sort((a, b) => new Date(a.dateRaw).getTime() - new Date(b.dateRaw).getTime());
     setAllRequests(combined);
@@ -308,13 +315,14 @@ export default function RekapPengajuan() {
             index + 1,
             req.type,
             req.dateDisplay,
+            req.timeDisplay,
             req.reason || '-',
             req.status
         ]);
         
         autoTable(doc, {
             startY: currentY,
-            head: [['No', 'Jenis Pengajuan', 'Tanggal', 'Keterangan', 'Status']],
+            head: [['No', 'Jenis Pengajuan', 'Tanggal', 'Jam', 'Keterangan', 'Status']],
             body: tableBody,
             theme: 'grid',
             headStyles: { fillColor: [51, 65, 85] },
@@ -526,6 +534,7 @@ export default function RekapPengajuan() {
                         <th className="px-4 py-3 font-medium w-16">No</th>
                         <th className="px-4 py-3 font-medium">Jenis Pengajuan</th>
                         <th className="px-4 py-3 font-medium">Tanggal</th>
+                        <th className="px-4 py-3 font-medium">Jam</th>
                         <th className="px-4 py-3 font-medium">Keterangan</th>
                         <th className="px-4 py-3 font-medium">Status</th>
                       </tr>
@@ -536,6 +545,7 @@ export default function RekapPengajuan() {
                           <td className="px-4 py-3 text-slate-600">{index + 1}</td>
                           <td className="px-4 py-3 font-medium text-slate-800">{req.type}</td>
                           <td className="px-4 py-3 text-slate-600">{req.dateDisplay}</td>
+                          <td className="px-4 py-3 text-slate-600">{req.timeDisplay}</td>
                           <td className="px-4 py-3 text-slate-600">{req.reason || '-'}</td>
                           <td className="px-4 py-3">
                             <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
