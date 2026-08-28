@@ -92,8 +92,8 @@ export default function ExitDetail() {
     const leader = allEmps.find(e => e.role === 'Manager' && e.departments?.name === empData.departments?.name);
     names['Atasan'] = leader ? leader.full_name : 'Super Admin';
     
-    // HR
-    const hr = allEmps.find(e => e.role === 'HR' || e.role === 'Super Admin' || (e.full_name || '').toLowerCase().includes('yunus'));
+    // HR -> Elis Maidah
+    const hr = allEmps.find(e => (e.full_name || '').toLowerCase().includes('elis maidah') || e.role === 'HR');
     names['HR'] = hr ? hr.full_name : 'Super Admin';
     
     // GA / Aset -> Di-handle oleh HR
@@ -205,13 +205,26 @@ export default function ExitDetail() {
     }
   };
   
-  // Toggle status helper
   const handleToggleStatus = async (table: string, itemId: string, currentStatus: string, pendingStatus: string, clearStatus: string) => {
     const newStatus = currentStatus === clearStatus ? pendingStatus : clearStatus;
     const payload: any = { status: newStatus };
+    
     if (newStatus === clearStatus) {
-        payload.completed_at = new Date().toISOString();
-        if(table === 'exit_access') payload.completed_by = employee?.id;
+        if (table === 'exit_approval') {
+            payload.approved_at = new Date().toISOString();
+            payload.approver = employee?.id;
+        } else {
+            payload.completed_at = new Date().toISOString();
+            if (table === 'exit_access') payload.completed_by = employee?.id;
+        }
+    } else {
+        if (table === 'exit_approval') {
+            payload.approved_at = null;
+            payload.approver = null;
+        } else {
+            payload.completed_at = null;
+            if (table === 'exit_access') payload.completed_by = null;
+        }
     }
     
     const { error } = await supabase.from(table).update(payload).eq('id', itemId);
@@ -220,6 +233,8 @@ export default function ExitDetail() {
       if(table === 'exit_access') fetchAccesses(id!);
       if(table === 'exit_hr') fetchHrs(id!);
       if(table === 'exit_approval') fetchApprovals(id!);
+    } else {
+      alert("Gagal mengupdate status: " + error.message);
     }
   };
 
