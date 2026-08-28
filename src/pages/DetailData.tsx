@@ -5,7 +5,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Employee } from '../types';
 import { useAuth } from '../lib/AuthContext';
-import { ArrowLeft, User, Briefcase, Phone, Mail, MapPin, Calendar, Clock, AlertTriangle, ShieldCheck, FileText, Eye, Edit } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, Phone, Mail, MapPin, Calendar, Clock, AlertTriangle, ShieldCheck, FileText, Eye, Edit, LogOut } from 'lucide-react';
 import { Badge } from '../components/ui/Badge';
 import {
   Table,
@@ -285,10 +285,16 @@ export default function DetailData() {
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-base font-bold">Informasi Karyawan</CardTitle>
               {!isManagerOrKaryawan && (
-                <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)} className="text-emerald-600 border-emerald-200 hover:bg-emerald-50">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Data
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => navigate('/team-pamit/new?employeeId=' + employee.id)} className="text-amber-600 border-amber-200 hover:bg-amber-50">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Proses Pamit
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)} className="text-emerald-600 border-emerald-200 hover:bg-emerald-50">
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Data
+                  </Button>
+                </div>
               )}
             </CardHeader>
             <CardContent className="pt-4">

@@ -37,6 +37,8 @@ import Pelanggaran from './pages/Pelanggaran';
 import Pengaturan from './pages/Pengaturan';
 import Administrasi from './pages/Administrasi';
 import ManajemenUser from './pages/ManajemenUser';
+import ExitDashboard from './pages/exit/ExitDashboard';
+import ExitDetail from './pages/exit/ExitDetail';
 
 // Pengajuan pages
 import PengajuanSakit from './pages/pengajuan/Sakit';
@@ -66,6 +68,9 @@ export default function App() {
           <Route path="pengaturan" element={<ProtectedRoute allowedRoles={['Super Admin', 'HR']}><Pengaturan /></ProtectedRoute>} />
           <Route path="administrasi" element={<ProtectedRoute><Administrasi /></ProtectedRoute>} />
           <Route path="manajemen-user" element={<ProtectedRoute allowedRoles={['Super Admin']}><ManajemenUser /></ProtectedRoute>} />
+          
+          <Route path="team-pamit" element={<ProtectedRoute><ExitDashboard /></ProtectedRoute>} />
+          <Route path="team-pamit/:id" element={<ProtectedRoute><ExitDetail /></ProtectedRoute>} />
           
           <Route path="pengajuan">
             <Route path="sakit" element={<PengajuanSakit />} />
