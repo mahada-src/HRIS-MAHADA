@@ -65,7 +65,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
     if (role === 'Super Admin') return true;
     if (role === 'HR') return item.name !== 'Manajemen User';
     if (role === 'Manager' || role === 'Ass Super Admin') return !['Pengaturan', 'Manajemen User'].includes(item.name);
-    return ['Tim Karyawan', 'Detail Data', 'Rekap Absensi', 'Benefit Karyawan', 'Ikatan Dinas', 'Pelanggaran (SP)', 'Pengajuan', 'Administrasi', 'Team Pamit'].includes(item.name);
+    return ['Tim Karyawan', 'Detail Data', 'Rekap Absensi', 'Benefit Karyawan', 'Ikatan Dinas', 'Pelanggaran (SP)', 'Pengajuan', 'Administrasi'].includes(item.name);
   });
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     Pengajuan: location.pathname.startsWith('/pengajuan'),

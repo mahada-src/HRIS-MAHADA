@@ -146,6 +146,7 @@ export default function ExitDashboard() {
                   <TableHead>Nama Karyawan</TableHead>
                   <TableHead>Departemen / Jabatan</TableHead>
                   <TableHead>Jenis Exit</TableHead>
+                  <TableHead>Tgl Pengajuan Resign</TableHead>
                   <TableHead>Last Working Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
@@ -173,6 +174,9 @@ export default function ExitDashboard() {
                       </TableCell>
                       <TableCell>
                         <span className="text-sm font-medium">{item.exit_type}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-slate-800">{new Date(item.resignation_date).toLocaleDateString('id-ID')}</div>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-slate-800">{new Date(item.last_working_date).toLocaleDateString('id-ID')}</div>

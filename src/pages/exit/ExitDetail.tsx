@@ -253,7 +253,7 @@ export default function ExitDetail() {
           }).eq('id', id);
           
           await supabase.from('employees').update({
-              status_karyawan: 'Resign'
+              status_karyawan: exitData?.exit_type || 'Tidak Aktif'
           }).eq('id', employeeData.id);
           
           fetchExitDetails(id);
