@@ -135,7 +135,7 @@ export default function Dashboard() {
 
     const allEmps = emp.data || [];
     const empCount = allEmps.length;
-    const activeEmpCount = allEmps.filter(e => e.employment_status !== 'Resign').length;
+    const activeEmpCount = allEmps.filter(e => e.status_karyawan === 'Aktif' || !e.status_karyawan).length;
 
     // Distribusi Departemen
     if (departmentId === 'all') {
@@ -143,7 +143,7 @@ export default function Dashboard() {
       if (depts) {
         const dData = depts.map(d => ({
           name: d.name,
-          value: allEmps.filter(e => e.department_id === d.id).length
+          value: allEmps.filter(e => e.department_id === d.id && (e.status_karyawan === 'Aktif' || !e.status_karyawan)).length
         })).filter(d => d.value > 0);
         setDeptData(dData);
       }
