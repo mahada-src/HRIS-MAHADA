@@ -117,7 +117,7 @@ export default function ExitDetail() {
         last_working_date: lastWorkingDate,
         reason: reason,
         status: 'Dalam Proses',
-        created_by: employee?.id
+        created_by: employee?.user_id || null
       })
       .select()
       .single();
@@ -201,7 +201,7 @@ export default function ExitDetail() {
       if(confirm('Apakah Anda yakin memberikan Final Clearance? Karyawan akan dinyatakan selesai keluar dari perusahaan.')) {
           await supabase.from('employee_exit').update({
               status: 'Clear',
-              approved_by: employee?.id,
+              approved_by: employee?.user_id || null,
               approved_at: new Date().toISOString()
           }).eq('id', id);
           
