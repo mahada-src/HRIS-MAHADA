@@ -4,7 +4,8 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { ArrowLeft, CheckCircle2, AlertCircle, Clock, Save } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, AlertCircle, Clock, Save, FileCheck, ShieldAlert, Monitor, DollarSign, Activity } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/Table';
 
 export default function ExitDetail() {
   const { id } = useParams();
@@ -18,6 +19,17 @@ export default function ExitDetail() {
   const [loading, setLoading] = useState(false);
   const [exitData, setExitData] = useState<any>(null);
   const [employeeData, setEmployeeData] = useState<any>(null);
+  
+  // States for checklists
+  const [handovers, setHandovers] = useState<any[]>([]);
+  const [assets, setAssets] = useState<any[]>([]);
+  const [accesses, setAccesses] = useState<any[]>([]);
+  const [finances, setFinances] = useState<any[]>([]);
+  const [hrs, setHrs] = useState<any[]>([]);
+  const [approvals, setApprovals] = useState<any[]>([]);
+  
+  // New Item states
+  const [newAccess, setNewAccess] = useState({ system_name: '', username: '', action: 'Disable' });
   
   // Form state for New Exit
   const [exitType, setExitType] = useState('Resign');
@@ -54,9 +66,43 @@ export default function ExitDetail() {
     if (exit) {
       setExitData(exit);
       setEmployeeData(exit.employees);
-      // Fetch related checklists here later
+      
+      // Fetch related data
+      await Promise.all([
+        fetchHandovers(exitId),
+        fetchAssets(exitId),
+        fetchAccesses(exitId),
+        fetchFinances(exitId),
+        fetchHrs(exitId),
+        fetchApprovals(exitId)
+      ]);
     }
     setLoading(false);
+  };
+
+  const fetchHandovers = async (exitId: string) => {
+    const { data } = await supabase.from('exit_handover').select('*').eq('exit_id', exitId);
+    if (data) setHandovers(data);
+  };
+  const fetchAssets = async (exitId: string) => {
+    const { data } = await supabase.from('exit_assets').select('*').eq('exit_id', exitId);
+    if (data) setAssets(data);
+  };
+  const fetchAccesses = async (exitId: string) => {
+    const { data } = await supabase.from('exit_access').select('*').eq('exit_id', exitId);
+    if (data) setAccesses(data);
+  };
+  const fetchFinances = async (exitId: string) => {
+    const { data } = await supabase.from('exit_finance').select('*').eq('exit_id', exitId);
+    if (data) setFinances(data);
+  };
+  const fetchHrs = async (exitId: string) => {
+    const { data } = await supabase.from('exit_hr').select('*').eq('exit_id', exitId);
+    if (data) setHrs(data);
+  };
+  const fetchApprovals = async (exitId: string) => {
+    const { data } = await supabase.from('exit_approval').select('*').eq('exit_id', exitId);
+    if (data) setApprovals(data);
   };
 
   const handleCreateExit = async () => {
@@ -83,16 +129,95 @@ export default function ExitDetail() {
     }
     
     if (data) {
-      // Trigger email logic here in the future
+      // Auto-generate some checklist templates
+      await generateChecklistTemplates(data.id);
       navigate(`/team-pamit/${data.id}`);
     }
+  };
+
+  const generateChecklistTemplates = async (exitId: string) => {
+    // Basic Handovers
+    await supabase.from('exit_handover').insert([
+      { exit_id: exitId, item: 'Daftar pekerjaan yang sedang berjalan' },
+      { exit_id: exitId, item: 'File/dokumen pekerjaan terkait' },
+      { exit_id: exitId, item: 'SOP/informasi khusus pekerjaan' }
+    ]);
+    // Basic HR
+    await supabase.from('exit_hr').insert([
+      { exit_id: exitId, checklist_type: 'BPJS Kesehatan Dinonaktifkan' },
+      { exit_id: exitId, checklist_type: 'Payroll Dinonaktifkan' }
+    ]);
+    // Department Approvals
+    await supabase.from('exit_approval').insert([
+      { exit_id: exitId, department: 'Atasan' },
+      { exit_id: exitId, department: 'GA / Aset' },
+      { exit_id: exitId, department: 'IT' },
+      { exit_id: exitId, department: 'Finance' },
+      { exit_id: exitId, department: 'HR' }
+    ]);
+  };
+
+  // Add Access
+  const handleAddAccess = async () => {
+    if (!newAccess.system_name || !id) return;
+    const { error } = await supabase.from('exit_access').insert({
+      exit_id: id,
+      system_name: newAccess.system_name,
+      username: newAccess.username,
+      action: newAccess.action,
+      status: 'Pending'
+    });
+    if (!error) {
+      setNewAccess({ system_name: '', username: '', action: 'Disable' });
+      fetchAccesses(id);
+    }
+  };
+  
+  // Toggle status helper
+  const handleToggleStatus = async (table: string, itemId: string, currentStatus: string, pendingStatus: string, clearStatus: string) => {
+    const newStatus = currentStatus === clearStatus ? pendingStatus : clearStatus;
+    const payload: any = { status: newStatus };
+    if (newStatus === clearStatus) {
+        payload.completed_at = new Date().toISOString();
+        if(table === 'exit_access') payload.completed_by = employee?.id;
+    }
+    
+    const { error } = await supabase.from(table).update(payload).eq('id', itemId);
+    if (!error) {
+      if(table === 'exit_handover') fetchHandovers(id!);
+      if(table === 'exit_access') fetchAccesses(id!);
+      if(table === 'exit_hr') fetchHrs(id!);
+      if(table === 'exit_approval') fetchApprovals(id!);
+    }
+  };
+
+  const checkFinalClearance = () => {
+      const allApproved = approvals.length > 0 && approvals.every(a => a.status === 'Clear');
+      return allApproved;
+  };
+  
+  const handleFinalClearance = async () => {
+      if(!id) return;
+      if(confirm('Apakah Anda yakin memberikan Final Clearance? Karyawan akan dinyatakan selesai keluar dari perusahaan.')) {
+          await supabase.from('employee_exit').update({
+              status: 'Clear',
+              approved_by: employee?.id,
+              approved_at: new Date().toISOString()
+          }).eq('id', id);
+          
+          await supabase.from('employees').update({
+              status_karyawan: 'Resign'
+          }).eq('id', employeeData.id);
+          
+          fetchExitDetails(id);
+          alert('Final Clearance Berhasil!');
+      }
   };
 
   if (loading) return <div className="p-8 text-center text-slate-500">Memuat data...</div>;
 
   if (isNew) {
     if (!employeeData) return <div className="p-8 text-center text-slate-500">Karyawan tidak ditemukan.</div>;
-    
     return (
       <div className="space-y-6 max-w-3xl mx-auto pb-10">
         <div className="flex items-center gap-4">
@@ -142,11 +267,14 @@ export default function ExitDetail() {
 
   if (!exitData) return <div className="p-8 text-center text-slate-500">Data exit tidak ditemukan.</div>;
 
+  const isFinalCleared = exitData.status === 'Clear' || exitData.status === 'Selesai';
+  const allClear = checkFinalClearance();
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-10">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/team-pamit')} className="mr-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/team-pamit')} className="mr-2 shrink-0">
             <ArrowLeft className="h-4 w-4 mr-2" /> Kembali
           </Button>
           <div>
@@ -157,7 +285,7 @@ export default function ExitDetail() {
         <div className="flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-lg">
           <span className="text-sm font-semibold text-slate-700">Status:</span>
           <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-            exitData.status === 'Clear' ? 'bg-emerald-100 text-emerald-700' : 
+            isFinalCleared ? 'bg-emerald-100 text-emerald-700' : 
             exitData.status === 'Not Clear' ? 'bg-red-100 text-red-700' : 
             'bg-amber-100 text-amber-700'
           }`}>{exitData.status}</span>
@@ -165,58 +293,181 @@ export default function ExitDetail() {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {/* Placeholder for Checklists */}
+        
+        {/* 1. Handover */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-emerald-500" /> Handover Pekerjaan
+          <CardHeader className="pb-3 border-b border-slate-100">
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileCheck className="h-5 w-5 text-blue-500" /> Handover Pekerjaan
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-slate-500">Modul checklist sedang dalam pengembangan lanjutan. Data base sudah siap.</p>
+          <CardContent className="pt-4">
+            <Table>
+              <TableBody>
+                {handovers.map(h => (
+                  <TableRow key={h.id}>
+                    <TableCell className="font-medium text-slate-800">{h.item}</TableCell>
+                    <TableCell className="w-[150px]">
+                      <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-semibold ${h.status === 'Selesai' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                        {h.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right w-[120px]">
+                      <Button variant="outline" size="sm" onClick={() => handleToggleStatus('exit_handover', h.id, h.status, 'Pending', 'Selesai')} disabled={isFinalCleared}>
+                         Toggle
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
 
+        {/* 2. System Access (IT) */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-emerald-500" /> Asset Clearance
+          <CardHeader className="pb-3 border-b border-slate-100">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Monitor className="h-5 w-5 text-indigo-500" /> System Access Clearance (IT)
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-slate-500">Modul checklist sedang dalam pengembangan lanjutan.</p>
+          <CardContent className="pt-4 space-y-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Sistem / Aplikasi</TableHead>
+                  <TableHead>Akun / Email</TableHead>
+                  <TableHead>Tindakan</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {accesses.map(a => (
+                  <TableRow key={a.id}>
+                    <TableCell className="font-medium text-slate-800">{a.system_name}</TableCell>
+                    <TableCell>{a.username || '-'}</TableCell>
+                    <TableCell>{a.action}</TableCell>
+                    <TableCell>
+                      <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-semibold ${a.status === 'Selesai' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                        {a.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="outline" size="sm" onClick={() => handleToggleStatus('exit_access', a.id, a.status, 'Pending', 'Selesai')} disabled={isFinalCleared}>
+                         Selesai
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            
+            {/* Add New Access */}
+            {!isFinalCleared && (
+              <div className="flex gap-2 items-end pt-2">
+                <div className="flex-1 space-y-1">
+                  <label className="text-xs font-medium text-slate-700">Nama Sistem (Misal: Google Workspace)</label>
+                  <input type="text" value={newAccess.system_name} onChange={e=>setNewAccess({...newAccess, system_name: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm" />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <label className="text-xs font-medium text-slate-700">Akun (Opsional)</label>
+                  <input type="text" value={newAccess.username} onChange={e=>setNewAccess({...newAccess, username: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm" />
+                </div>
+                <div className="w-48 space-y-1">
+                  <label className="text-xs font-medium text-slate-700">Tindakan</label>
+                  <select value={newAccess.action} onChange={e=>setNewAccess({...newAccess, action: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm">
+                    <option value="Disable">Disable Account</option>
+                    <option value="Remove Access">Remove Access</option>
+                    <option value="Change Password">Change Password</option>
+                  </select>
+                </div>
+                <Button onClick={handleAddAccess} className="bg-slate-800 text-white h-[38px]">Tambah</Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 3. HR / BPJS */}
+        <Card>
+          <CardHeader className="pb-3 border-b border-slate-100">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="h-5 w-5 text-rose-500" /> HR & BPJS Clearance
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+             <Table>
+              <TableBody>
+                {hrs.map(h => (
+                  <TableRow key={h.id}>
+                    <TableCell className="font-medium text-slate-800">{h.checklist_type}</TableCell>
+                    <TableCell className="w-[150px]">
+                      <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-semibold ${h.status === 'Selesai' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                        {h.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right w-[120px]">
+                      <Button variant="outline" size="sm" onClick={() => handleToggleStatus('exit_hr', h.id, h.status, 'Pending', 'Selesai')} disabled={isFinalCleared}>
+                         Toggle
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-amber-500" /> Data Security & System Access
+        {/* Department Approvals */}
+        <Card className="border-slate-200 bg-slate-50/50 shadow-inner">
+          <CardHeader className="pb-3 border-b border-slate-200">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-slate-600" /> Department Approval Status
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-slate-500">Modul checklist sedang dalam pengembangan lanjutan.</p>
+          <CardContent className="pt-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {approvals.map(app => (
+                <div key={app.id} className="bg-white p-4 rounded-lg border border-slate-200 text-center space-y-2 shadow-sm">
+                  <h4 className="text-sm font-semibold text-slate-700">{app.department}</h4>
+                  <div className={`text-xs font-bold px-2 py-1 rounded-full ${app.status === 'Clear' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                    {app.status}
+                  </div>
+                  {!isFinalCleared && (
+                    <Button variant="ghost" size="sm" className="w-full mt-2 text-xs h-8" onClick={() => handleToggleStatus('exit_approval', app.id, app.status, 'Pending', 'Clear')}>
+                      Set {app.status === 'Clear' ? 'Pending' : 'Clear'}
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-amber-500" /> Finance & HR Clearance
-            </CardTitle>
+        <Card className={`border-2 ${isFinalCleared ? 'border-emerald-500 bg-emerald-50' : 'border-emerald-200 bg-white'}`}>
+          <CardHeader className="text-center">
+            <CardTitle className="text-xl text-emerald-800">Final Exit Clearance</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-slate-500">Modul checklist sedang dalam pengembangan lanjutan.</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-emerald-200 bg-emerald-50/30">
-          <CardHeader>
-            <CardTitle className="text-lg text-emerald-800">Final Exit Clearance</CardTitle>
-          </CardHeader>
-          <CardContent>
-             <p className="text-sm text-slate-500 mb-4">Pastikan seluruh departemen telah memberikan approval CLEAR sebelum melakukan Final Clearance.</p>
-             <Button disabled className="bg-emerald-600">Approve Final Clearance</Button>
+          <CardContent className="flex flex-col items-center pb-6">
+             {!isFinalCleared ? (
+                <>
+                  <p className="text-sm text-slate-500 mb-6 text-center max-w-lg">
+                    Pastikan seluruh departemen telah memberikan approval CLEAR sebelum melakukan Final Clearance. Setelah Final Clearance diberikan, status karyawan akan otomatis diubah menjadi Resign/Inactive.
+                  </p>
+                  <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white w-64" disabled={!allClear} onClick={handleFinalClearance}>
+                    Approve Final Clearance
+                  </Button>
+                  {!allClear && <p className="text-xs text-amber-600 mt-2 font-medium">Masih ada departemen yang belum CLEAR.</p>}
+                </>
+             ) : (
+                <div className="flex flex-col items-center">
+                  <div className="h-16 w-16 bg-emerald-500 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-emerald-500/30">
+                    <CheckCircle2 className="h-10 w-10 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-emerald-800">Clearance Selesai</h3>
+                  <p className="text-sm text-emerald-600 mt-1">Disetujui pada {new Date(exitData.approved_at).toLocaleDateString('id-ID')}</p>
+                </div>
+             )}
           </CardContent>
         </Card>
       </div>
