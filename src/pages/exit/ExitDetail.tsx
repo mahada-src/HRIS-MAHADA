@@ -83,7 +83,7 @@ export default function ExitDetail() {
   };
 
   const fetchApproverNames = async (empData: any) => {
-    const { data: allEmps } = await supabase.from('employees').select('id, full_name, role, departments(name)');
+    const { data: allEmps } = await supabase.from('employees').select('id, full_name, role, employee_code, departments(name)');
     if(!allEmps) return;
     
     const names: Record<string, string> = {};
@@ -92,21 +92,20 @@ export default function ExitDetail() {
     const leader = allEmps.find(e => e.role === 'Manager' && e.departments?.name === empData.departments?.name);
     names['Atasan'] = leader ? leader.full_name : 'Super Admin';
     
-    // GA / Aset
-    const ga = allEmps.find(e => (e.departments?.name || '').toLowerCase().includes('ga') || (e.departments?.name || '').toLowerCase().includes('aset'));
-    names['GA / Aset'] = ga ? ga.full_name : 'Super Admin';
+    // HR
+    const hr = allEmps.find(e => e.role === 'HR' || e.role === 'Super Admin' || (e.full_name || '').toLowerCase().includes('yunus'));
+    names['HR'] = hr ? hr.full_name : 'Super Admin';
     
-    // IT
-    const it = allEmps.find(e => (e.departments?.name || '').toLowerCase().includes('it'));
+    // GA / Aset -> Di-handle oleh HR
+    names['GA / Aset'] = names['HR'];
+    
+    // IT -> Yunus (19005)
+    const it = allEmps.find(e => e.employee_code === '19005' || (e.full_name || '').toLowerCase().includes('yunus'));
     names['IT'] = it ? it.full_name : 'Super Admin';
     
-    // Finance
+    // Finance -> Leader Finance
     const finance = allEmps.find(e => e.role === 'Manager' && (e.departments?.name || '').toLowerCase().includes('finance'));
     names['Finance'] = finance ? finance.full_name : 'Super Admin';
-    
-    // HR
-    const hr = allEmps.find(e => e.role === 'HR' || e.role === 'Super Admin');
-    names['HR'] = hr ? hr.full_name : 'Super Admin';
     
     setApproverNames(names);
   };
@@ -475,7 +474,7 @@ export default function ExitDetail() {
                       {app.status}
                     </div>
                   </div>
-                  {!isFinalCleared && (
+                  {!isFinalCleared && (employee?.role === 'Super Admin' || employee?.full_name === approverNames[app.department]) && (
                     <Button variant="ghost" size="sm" className="w-full mt-3 text-xs h-8 border border-slate-100" onClick={() => handleToggleStatus('exit_approval', app.id, app.status, 'Pending', 'Clear')}>
                       Set {app.status === 'Clear' ? 'Pending' : 'Clear'}
                     </Button>

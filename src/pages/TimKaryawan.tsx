@@ -213,42 +213,40 @@ export default function TimKaryawan() {
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="flex rounded-lg border border-slate-200 overflow-hidden">
-            <button 
-              className={`px-4 py-2 text-sm font-semibold border-r border-slate-200 hover:bg-slate-50 transition-colors ${filterStatus === 'Aktif' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
-              onClick={() => setFilterStatus('Aktif')}
-            >
-              Aktif
-            </button>
-            <button 
-              className={`px-4 py-2 text-sm font-semibold border-r border-slate-200 hover:bg-slate-50 transition-colors ${filterStatus === 'Cuti' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
-              onClick={() => setFilterStatus('Cuti')}
-            >
-              Cuti
-            </button>
-            {role !== 'Karyawan' && (
-              <>
-                <button 
-                  className={`px-4 py-2 text-sm font-semibold border-r border-slate-200 hover:bg-slate-50 transition-colors ${filterStatus === 'Resign' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
-                  onClick={() => setFilterStatus('Resign')}
-                >
-                  Resign
-                </button>
-                <button 
-                  className={`px-4 py-2 text-sm font-semibold border-r border-slate-200 hover:bg-slate-50 transition-colors ${filterStatus === 'PHK' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
-                  onClick={() => setFilterStatus('PHK')}
-                >
-                  PHK
-                </button>
-                <button 
-                  className={`px-4 py-2 text-sm font-semibold hover:bg-slate-50 transition-colors ${filterStatus === 'Semua' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
-                  onClick={() => setFilterStatus('Semua')}
-                >
-                  Semua
-                </button>
-              </>
-            )}
-          </div>
+          {!isManagerOrKaryawan && (
+            <div className="flex rounded-lg border border-slate-200 overflow-hidden">
+              <button 
+                className={`px-4 py-2 text-sm font-semibold border-r border-slate-200 hover:bg-slate-50 transition-colors ${filterStatus === 'Aktif' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
+                onClick={() => setFilterStatus('Aktif')}
+              >
+                Aktif
+              </button>
+              <button 
+                className={`px-4 py-2 text-sm font-semibold border-r border-slate-200 hover:bg-slate-50 transition-colors ${filterStatus === 'Cuti' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
+                onClick={() => setFilterStatus('Cuti')}
+              >
+                Cuti
+              </button>
+              <button 
+                className={`px-4 py-2 text-sm font-semibold border-r border-slate-200 hover:bg-slate-50 transition-colors ${filterStatus === 'Resign' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
+                onClick={() => setFilterStatus('Resign')}
+              >
+                Resign
+              </button>
+              <button 
+                className={`px-4 py-2 text-sm font-semibold border-r border-slate-200 hover:bg-slate-50 transition-colors ${filterStatus === 'PHK' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
+                onClick={() => setFilterStatus('PHK')}
+              >
+                PHK
+              </button>
+              <button 
+                className={`px-4 py-2 text-sm font-semibold hover:bg-slate-50 transition-colors ${filterStatus === 'Semua' ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
+                onClick={() => setFilterStatus('Semua')}
+              >
+                Semua
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
