@@ -27,9 +27,10 @@ export default function ExitDetail() {
   const [finances, setFinances] = useState<any[]>([]);
   const [hrs, setHrs] = useState<any[]>([]);
   const [approvals, setApprovals] = useState<any[]>([]);
+  const [approverNames, setApproverNames] = useState<Record<string, string>>({});
   
   // New Item states
-  const [newAccess, setNewAccess] = useState({ system_name: '', username: '', action: 'Disable' });
+  const [newAccess, setNewAccess] = useState({ system_name: '', username: '', action: 'Nonaktifkan Akun' });
   
   // Form state for New Exit
   const [exitType, setExitType] = useState('Resign');
@@ -74,10 +75,40 @@ export default function ExitDetail() {
         fetchAccesses(exitId),
         fetchFinances(exitId),
         fetchHrs(exitId),
-        fetchApprovals(exitId)
+        fetchApprovals(exitId),
+        fetchApproverNames(exit.employees)
       ]);
     }
     setLoading(false);
+  };
+
+  const fetchApproverNames = async (empData: any) => {
+    const { data: allEmps } = await supabase.from('employees').select('id, full_name, role, departments(name)');
+    if(!allEmps) return;
+    
+    const names: Record<string, string> = {};
+    
+    // Atasan: Leader of the employee's department
+    const leader = allEmps.find(e => e.role === 'Manager' && e.departments?.name === empData.departments?.name);
+    names['Atasan'] = leader ? leader.full_name : 'Super Admin';
+    
+    // GA / Aset
+    const ga = allEmps.find(e => (e.departments?.name || '').toLowerCase().includes('ga') || (e.departments?.name || '').toLowerCase().includes('aset'));
+    names['GA / Aset'] = ga ? ga.full_name : 'Super Admin';
+    
+    // IT
+    const it = allEmps.find(e => (e.departments?.name || '').toLowerCase().includes('it'));
+    names['IT'] = it ? it.full_name : 'Super Admin';
+    
+    // Finance
+    const finance = allEmps.find(e => e.role === 'Manager' && (e.departments?.name || '').toLowerCase().includes('finance'));
+    names['Finance'] = finance ? finance.full_name : 'Super Admin';
+    
+    // HR
+    const hr = allEmps.find(e => e.role === 'HR' || e.role === 'Super Admin');
+    names['HR'] = hr ? hr.full_name : 'Super Admin';
+    
+    setApproverNames(names);
   };
 
   const fetchHandovers = async (exitId: string) => {
@@ -168,7 +199,7 @@ export default function ExitDetail() {
       status: 'Pending'
     });
     if (!error) {
-      setNewAccess({ system_name: '', username: '', action: 'Disable' });
+      setNewAccess({ system_name: '', username: '', action: 'Nonaktifkan Akun' });
       fetchAccesses(id);
     }
   };
@@ -312,9 +343,11 @@ export default function ExitDetail() {
                         {h.status}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right w-[120px]">
-                      <Button variant="outline" size="sm" onClick={() => handleToggleStatus('exit_handover', h.id, h.status, 'Pending', 'Selesai')} disabled={isFinalCleared}>
-                         Toggle
+                    <TableCell className="text-right w-[150px]">
+                      <Button variant="outline" size="sm" onClick={() => handleToggleStatus('exit_handover', h.id, h.status, 'Pending', 'Selesai')} disabled={isFinalCleared}
+                        className={h.status === 'Selesai' ? 'text-amber-600 border-amber-200' : 'text-emerald-600 border-emerald-200'}
+                      >
+                         {h.status === 'Selesai' ? 'Batal Selesai' : 'Tandai Selesai'}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -354,8 +387,10 @@ export default function ExitDetail() {
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => handleToggleStatus('exit_access', a.id, a.status, 'Pending', 'Selesai')} disabled={isFinalCleared}>
-                         Selesai
+                      <Button variant="outline" size="sm" onClick={() => handleToggleStatus('exit_access', a.id, a.status, 'Pending', 'Selesai')} disabled={isFinalCleared}
+                        className={a.status === 'Selesai' ? 'text-amber-600 border-amber-200' : 'text-emerald-600 border-emerald-200'}
+                      >
+                         {a.status === 'Selesai' ? 'Batal Selesai' : 'Tandai Selesai'}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -372,17 +407,17 @@ export default function ExitDetail() {
                 </div>
                 <div className="flex-1 space-y-1">
                   <label className="text-xs font-medium text-slate-700">Akun (Opsional)</label>
-                  <input type="text" value={newAccess.username} onChange={e=>setNewAccess({...newAccess, username: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm" />
+                  <input type="text" placeholder="Misal: email@perusahaan.com" value={newAccess.username} onChange={e=>setNewAccess({...newAccess, username: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm" />
                 </div>
-                <div className="w-48 space-y-1">
+                <div className="w-48 space-y-1 shrink-0">
                   <label className="text-xs font-medium text-slate-700">Tindakan</label>
                   <select value={newAccess.action} onChange={e=>setNewAccess({...newAccess, action: e.target.value})} className="w-full rounded-md border border-slate-200 p-2 text-sm">
-                    <option value="Disable">Disable Account</option>
-                    <option value="Remove Access">Remove Access</option>
-                    <option value="Change Password">Change Password</option>
+                    <option value="Nonaktifkan Akun">Nonaktifkan Akun</option>
+                    <option value="Hapus Akses">Hapus Akses</option>
+                    <option value="Ubah Password">Ubah Password</option>
                   </select>
                 </div>
-                <Button onClick={handleAddAccess} className="bg-slate-800 text-white h-[38px]">Tambah</Button>
+                <Button onClick={handleAddAccess} className="bg-slate-800 text-white h-[38px] shrink-0 w-24">Tambah</Button>
               </div>
             )}
           </CardContent>
@@ -406,9 +441,11 @@ export default function ExitDetail() {
                         {h.status}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right w-[120px]">
-                      <Button variant="outline" size="sm" onClick={() => handleToggleStatus('exit_hr', h.id, h.status, 'Pending', 'Selesai')} disabled={isFinalCleared}>
-                         Toggle
+                    <TableCell className="text-right w-[150px]">
+                      <Button variant="outline" size="sm" onClick={() => handleToggleStatus('exit_hr', h.id, h.status, 'Pending', 'Selesai')} disabled={isFinalCleared}
+                        className={h.status === 'Selesai' ? 'text-amber-600 border-amber-200' : 'text-emerald-600 border-emerald-200'}
+                      >
+                         {h.status === 'Selesai' ? 'Batal Selesai' : 'Tandai Selesai'}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -428,13 +465,16 @@ export default function ExitDetail() {
           <CardContent className="pt-4">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {approvals.map(app => (
-                <div key={app.id} className="bg-white p-4 rounded-lg border border-slate-200 text-center space-y-2 shadow-sm">
-                  <h4 className="text-sm font-semibold text-slate-700">{app.department}</h4>
-                  <div className={`text-xs font-bold px-2 py-1 rounded-full ${app.status === 'Clear' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                    {app.status}
+                <div key={app.id} className="bg-white p-4 rounded-lg border border-slate-200 text-center space-y-1 shadow-sm flex flex-col items-center justify-between">
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-slate-700">{app.department}</h4>
+                    <p className="text-[10px] font-medium text-slate-500 uppercase pb-2">{approverNames[app.department] || 'Memuat...'}</p>
+                    <div className={`text-xs font-bold px-3 py-1 rounded-full inline-block ${app.status === 'Clear' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {app.status}
+                    </div>
                   </div>
                   {!isFinalCleared && (
-                    <Button variant="ghost" size="sm" className="w-full mt-2 text-xs h-8" onClick={() => handleToggleStatus('exit_approval', app.id, app.status, 'Pending', 'Clear')}>
+                    <Button variant="ghost" size="sm" className="w-full mt-3 text-xs h-8 border border-slate-100" onClick={() => handleToggleStatus('exit_approval', app.id, app.status, 'Pending', 'Clear')}>
                       Set {app.status === 'Clear' ? 'Pending' : 'Clear'}
                     </Button>
                   )}
