@@ -54,7 +54,7 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     // Karyawan
-    let empQuery = supabase.from('employees').select('id, department_id, employment_status');
+    let empQuery = supabase.from('employees').select('id, department_id, employment_status, status_karyawan');
     if (role === 'Karyawan') {
       empQuery = empQuery.eq('id', currentUser?.id);
     } else if (departmentId !== 'all') {
