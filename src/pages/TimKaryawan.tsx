@@ -119,7 +119,7 @@ export default function TimKaryawan() {
       alert('Gagal menambahkan karyawan: ' + error.message);
     } else {
       setIsAddModalOpen(false);
-      setNewEmp({ full_name: '', employee_code: '', email: '', department_id: '', position_id: '' });
+      setNewEmp({ full_name: '', employee_code: '', email: '', department_id: '', position_id: '', employment_status: 'Karyawan Tetap', status_karyawan: 'Aktif' });
       fetchEmployees();
     }
   };

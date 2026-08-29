@@ -60,8 +60,6 @@ export interface Attendance {
   user_id?: string;
   role?: string;
   employee_id: string;
-  user_id?: string;
-  role?: string;
   date: string;
   check_in?: string;
   check_out?: string;
@@ -77,8 +75,6 @@ export interface SickRequest {
   user_id?: string;
   role?: string;
   employee_id: string;
-  user_id?: string;
-  role?: string;
   start_date: string;
   end_date: string;
   reason: string;
@@ -94,8 +90,6 @@ export interface PermissionRequest {
   user_id?: string;
   role?: string;
   employee_id: string;
-  user_id?: string;
-  role?: string;
   permission_type: string;
   date: string;
   reason: string;
@@ -110,8 +104,6 @@ export interface LateRequest {
   user_id?: string;
   role?: string;
   employee_id: string;
-  user_id?: string;
-  role?: string;
   date: string;
   estimated_arrival: string;
   reason: string;
@@ -126,8 +118,6 @@ export interface HalfDayRequest {
   user_id?: string;
   role?: string;
   employee_id: string;
-  user_id?: string;
-  role?: string;
   date: string;
   start_time: string;
   end_time: string;
@@ -143,8 +133,6 @@ export interface LeaveRequest {
   user_id?: string;
   role?: string;
   employee_id: string;
-  user_id?: string;
-  role?: string;
   leave_type: string;
   start_date: string;
   end_date: string;
@@ -160,8 +148,6 @@ export interface WfhRequest {
   user_id?: string;
   role?: string;
   employee_id: string;
-  user_id?: string;
-  role?: string;
   date: string;
   reason: string;
   todo_list?: string;
@@ -176,8 +162,6 @@ export interface OvertimeRequest {
   user_id?: string;
   role?: string;
   employee_id: string;
-  user_id?: string;
-  role?: string;
   date: string;
   start_time: string;
   end_time: string;
@@ -193,8 +177,6 @@ export interface Benefit {
   user_id?: string;
   role?: string;
   employee_id: string;
-  user_id?: string;
-  role?: string;
   benefit_type: string;
   description?: string;
   amount?: number;
@@ -209,8 +191,6 @@ export interface BusinessTripBond {
   user_id?: string;
   role?: string;
   employee_id: string;
-  user_id?: string;
-  role?: string;
   program_type: string;
   contract_number?: string;
   start_date: string;
@@ -226,8 +206,6 @@ export interface Violation {
   user_id?: string;
   role?: string;
   employee_id: string;
-  user_id?: string;
-  role?: string;
   violation_type: string;
   letter_number?: string;
   date: string;

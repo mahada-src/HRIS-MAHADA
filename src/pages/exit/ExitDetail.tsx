@@ -89,7 +89,7 @@ export default function ExitDetail() {
     const names: Record<string, string> = {};
     
     // Atasan: Leader of the employee's department
-    const leader = allEmps.find(e => e.role === 'Manager' && e.departments?.name === empData.departments?.name);
+    const leader = allEmps.find(e => e.role === 'Manager' && (e.departments as any)?.name === empData.departments?.name);
     names['Atasan'] = leader ? leader.full_name : 'Super Admin';
     
     // HR -> Elis Maidah
@@ -105,8 +105,8 @@ export default function ExitDetail() {
     
     // Finance -> Leader Finance
     const finance = allEmps.find(e => 
-      (e.positions?.title || '').toLowerCase() === 'leader finance' || 
-      (e.role === 'Manager' && (e.departments?.name || '').toLowerCase().includes('finance')) ||
+      ((e.positions as any)?.title || '').toLowerCase() === 'leader finance' || 
+      (e.role === 'Manager' && ((e.departments as any)?.name || '').toLowerCase().includes('finance')) ||
       (e.full_name || '').toLowerCase().includes('linda amalia')
     );
     names['Finance'] = finance ? finance.full_name : 'Super Admin';

@@ -442,7 +442,6 @@ export default function InventoryAssetPage() {
                       </div>
                     </>
                   )}
-                </div>
               </form>
             </CardContent>
             <div className="border-t border-slate-100 p-4 flex justify-end gap-3 shrink-0">
