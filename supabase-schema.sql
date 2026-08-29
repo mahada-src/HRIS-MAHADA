@@ -376,6 +376,11 @@ CREATE TABLE IF NOT EXISTS public.inventory_assets (
     asset_status VARCHAR(50), -- Terpakai, Tidak Dipakai
     asset_condition VARCHAR(100), -- Baik, Rusak, dll
     condition_notes TEXT,
+    production_year VARCHAR(50),
+    processor VARCHAR(255),
+    storage VARCHAR(100),
+    ram VARCHAR(100),
+    last_used DATE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -384,3 +389,11 @@ DROP TRIGGER IF EXISTS update_inventory_assets_modtime ON public.inventory_asset
 CREATE TRIGGER update_inventory_assets_modtime BEFORE UPDATE ON public.inventory_assets FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 ALTER TABLE public.inventory_assets ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Super Admin full access inventory" ON public.inventory_assets FOR ALL USING (get_user_role() IN ('Super Admin', 'Ass Super Admin'));
+
+-- Menambahkan kolom spesifikasi laptop (Jalankan query ini jika tabel sudah pernah dibuat sebelumnya)
+ALTER TABLE public.inventory_assets 
+ADD COLUMN IF NOT EXISTS production_year VARCHAR(50),
+ADD COLUMN IF NOT EXISTS processor VARCHAR(255),
+ADD COLUMN IF NOT EXISTS storage VARCHAR(100),
+ADD COLUMN IF NOT EXISTS ram VARCHAR(100),
+ADD COLUMN IF NOT EXISTS last_used DATE;

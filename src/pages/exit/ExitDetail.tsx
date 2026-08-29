@@ -172,12 +172,17 @@ export default function ExitDetail() {
       { exit_id: exitId, item: 'File/dokumen pekerjaan terkait' },
       { exit_id: exitId, item: 'SOP/informasi khusus pekerjaan' }
     ]);
-    // Basic HR & Finance
+    // Basic HR & Finance & Assets
     await supabase.from('exit_hr').insert([
       { exit_id: exitId, checklist_type: 'BPJS Kesehatan Dinonaktifkan' },
       { exit_id: exitId, checklist_type: 'Payroll Dinonaktifkan' },
       { exit_id: exitId, checklist_type: 'Hutang ke Perusahaan' },
-      { exit_id: exitId, checklist_type: 'Perjalanan Dinas Aktif / Tidak' }
+      { exit_id: exitId, checklist_type: 'Perjalanan Dinas Aktif / Tidak' },
+      { exit_id: exitId, checklist_type: 'Asset Laptop' },
+      { exit_id: exitId, checklist_type: 'Asset Handphone' },
+      { exit_id: exitId, checklist_type: 'Asset Pakaian' },
+      { exit_id: exitId, checklist_type: 'Asset Id Card' },
+      { exit_id: exitId, checklist_type: 'Asset inventaris lainnya' }
     ]);
     // Department Approvals
     await supabase.from('exit_approval').insert([

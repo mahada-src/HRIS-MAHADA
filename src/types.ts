@@ -250,7 +250,13 @@ export interface InventoryAsset {
   asset_status?: string;
   asset_condition?: string;
   condition_notes?: string;
-  created_at?: string;
+  // Laptop specific fields
+  production_year?: string;
+  processor?: string;
+  storage?: string;
+  ram?: string;
+  last_used?: string;
+  created_at: string;
   updated_at?: string;
   employees?: Employee;
 }
