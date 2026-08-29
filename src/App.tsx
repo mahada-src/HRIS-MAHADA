@@ -51,6 +51,10 @@ import PengajuanWfh from './pages/pengajuan/Wfh';
 import PengajuanLembur from './pages/pengajuan/Lembur';
 import RekapPengajuan from './pages/RekapPengajuan';
 
+// Inventory pages
+import InventoryAssetPage from './pages/inventory/InventoryAssetPage';
+import RekapInventoryPage from './pages/inventory/RekapInventoryPage';
+
 export default function App() {
   return (
     <AuthProvider>
@@ -82,6 +86,11 @@ export default function App() {
             <Route path="cuti" element={<PengajuanCuti />} />
             <Route path="lembur" element={<PengajuanLembur />} />
             <Route path="rekap" element={<RekapPengajuan />} />
+          </Route>
+          
+          <Route path="inventory">
+            <Route path="rekap" element={<ProtectedRoute allowedRoles={['Super Admin', 'Ass Super Admin']}><RekapInventoryPage /></ProtectedRoute>} />
+            <Route path=":category" element={<ProtectedRoute allowedRoles={['Super Admin', 'Ass Super Admin']}><InventoryAssetPage /></ProtectedRoute>} />
           </Route>
         </Route>
       </Routes>

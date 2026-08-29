@@ -237,3 +237,20 @@ export interface Violation {
   updated_at?: string;
   employees?: Employee;
 }
+
+export interface InventoryAsset {
+  id: string;
+  category: string;
+  asset_name: string;
+  brand?: string;
+  employee_id?: string;
+  inventory_code?: string;
+  purchase_date?: string;
+  purchase_price?: number;
+  asset_status?: string;
+  asset_condition?: string;
+  condition_notes?: string;
+  created_at?: string;
+  updated_at?: string;
+  employees?: Employee;
+}

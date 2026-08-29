@@ -20,6 +20,7 @@ import {
   ChevronRight,
   Shield,
   UserMinus,
+  Database,
 } from 'lucide-react';
 
 const navigation = [
@@ -47,6 +48,19 @@ const navigation = [
   },
   { name: 'Pengaturan', href: '/pengaturan', icon: Settings },
   { name: 'Administrasi', href: '/administrasi', icon: FolderOpen },
+  {
+    name: 'Inventory Asset',
+    icon: Database,
+    children: [
+      { name: 'Asset Laptop / PC', href: '/inventory/laptop-pc' },
+      { name: 'Asset Handphone', href: '/inventory/handphone' },
+      { name: 'Asset Conten', href: '/inventory/conten' },
+      { name: 'Asset Mesin', href: '/inventory/mesin' },
+      { name: 'Asset Kendaraan', href: '/inventory/kendaraan' },
+      { name: 'Asset Sapras', href: '/inventory/sapras' },
+      { name: 'Rekap Asset', href: '/inventory/rekap' },
+    ],
+  },
   { name: 'Team Pamit', href: '/team-pamit', icon: UserMinus },
   { name: 'Manajemen User', href: '/manajemen-user', icon: Shield },
 ];
@@ -62,6 +76,9 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
   const role = employee?.role || 'Karyawan';
 
   const filteredNavigation = navigation.filter(item => {
+    if (item.name === 'Inventory Asset') {
+      return role === 'Super Admin' || role === 'Ass Super Admin';
+    }
     if (role === 'Super Admin') return true;
     if (role === 'HR') return item.name !== 'Manajemen User';
     if (role === 'Manager' || role === 'Ass Super Admin') return !['Pengaturan', 'Manajemen User'].includes(item.name);
@@ -69,6 +86,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
   });
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     Pengajuan: location.pathname.startsWith('/pengajuan'),
+    'Inventory Asset': location.pathname.startsWith('/inventory'),
   });
 
   const toggleMenu = (name: string) => {

@@ -362,3 +362,25 @@ CREATE TRIGGER update_document_categories_modtime BEFORE UPDATE ON public.docume
 ALTER TABLE public.document_categories ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read doc categories" ON public.document_categories FOR SELECT USING (true);
 CREATE POLICY "Admin write doc categories" ON public.document_categories FOR ALL USING (get_user_role() IN ('Super Admin', 'HR'));
+
+-- 19. Inventory Assets
+CREATE TABLE IF NOT EXISTS public.inventory_assets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    category VARCHAR(100) NOT NULL,
+    asset_name VARCHAR(255) NOT NULL,
+    brand VARCHAR(255),
+    employee_id UUID REFERENCES public.employees(id) ON DELETE SET NULL,
+    inventory_code VARCHAR(100),
+    purchase_date DATE,
+    purchase_price DECIMAL(15, 2),
+    asset_status VARCHAR(50), -- Terpakai, Tidak Dipakai
+    asset_condition VARCHAR(100), -- Baik, Rusak, dll
+    condition_notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+DROP TRIGGER IF EXISTS update_inventory_assets_modtime ON public.inventory_assets;
+CREATE TRIGGER update_inventory_assets_modtime BEFORE UPDATE ON public.inventory_assets FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+ALTER TABLE public.inventory_assets ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Super Admin full access inventory" ON public.inventory_assets FOR ALL USING (get_user_role() IN ('Super Admin', 'Ass Super Admin'));
