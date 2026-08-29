@@ -83,7 +83,7 @@ export default function ExitDetail() {
   };
 
   const fetchApproverNames = async (empData: any) => {
-    const { data: allEmps } = await supabase.from('employees').select('id, full_name, role, employee_code, departments(name)');
+    const { data: allEmps } = await supabase.from('employees').select('id, full_name, role, employee_code, departments(name), positions(title)');
     if(!allEmps) return;
     
     const names: Record<string, string> = {};
@@ -104,7 +104,11 @@ export default function ExitDetail() {
     names['IT'] = it ? it.full_name : 'Super Admin';
     
     // Finance -> Leader Finance
-    const finance = allEmps.find(e => e.role === 'Manager' && (e.departments?.name || '').toLowerCase().includes('finance'));
+    const finance = allEmps.find(e => 
+      (e.positions?.title || '').toLowerCase() === 'leader finance' || 
+      (e.role === 'Manager' && (e.departments?.name || '').toLowerCase().includes('finance')) ||
+      (e.full_name || '').toLowerCase().includes('linda amalia')
+    );
     names['Finance'] = finance ? finance.full_name : 'Super Admin';
     
     setApproverNames(names);
