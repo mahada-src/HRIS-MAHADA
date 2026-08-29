@@ -59,7 +59,7 @@ export default function InventoryAssetPage() {
         .select('*, employees(id, full_name, role)')
         .eq('category', dbCategory)
         .order('created_at', { ascending: false }),
-      supabase.from('employees').select('*').order('full_name')
+      supabase.from('employees').select('id, full_name').order('full_name')
     ]);
     
     if (assetsRes.data) {
