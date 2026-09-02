@@ -14,14 +14,11 @@ import { cn } from '../../lib/utils';
 import { MahadaGrowthRecord } from '../../types';
 
 const ACTIVITIES = [
-  "Daily Ibadah & Growth",
-  "shalat dhuha",
-  "jurnal syukur",
+  "Shalat Dhuha",
+  "Jurnal Syukur",
   "Shalat Tahajud",
-  "Pembiasaan Baik",
-  "Jejak Kebaikan",
-  "Catatan Kebaikan Harian",
-  "Spiritual & Personal Growth"
+  "Shaum Senin Kamis",
+  "Baca Buku"
 ];
 
 export default function Dashboard() {
@@ -107,12 +104,9 @@ export default function Dashboard() {
       // Consistency percentage (based on all days since join date or first record)
       let percentage = 0;
       if (allRecords && allRecords.length > 0) {
-          // simple approximation: max possible is total days since first record * 8
           const sorted = [...allRecords].sort((a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime());
           const firstDate = new Date(sorted[0].tanggal);
           const today = new Date();
-          const diffTime = Math.abs(today.getTime() - firstDate.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
           let maxPossible = 0;
           let tempDate = new Date(firstDate);
           while (tempDate <= today) {
@@ -317,7 +311,8 @@ export default function Dashboard() {
             <div className="divide-y divide-slate-100">
                 {ACTIVITIES.map((activity, index) => {
                     const isShaum = activity === "Shaum Senin Kamis";
-                    const selDay = new Date(selectedDate).getDay();
+                    const selDate = new Date(selectedDate);
+                    const selDay = selDate.getDay();
                     const isAllowed = !isShaum || selDay === 1 || selDay === 4;
 
                     return (
