@@ -238,3 +238,15 @@ export interface InventoryAsset {
   updated_at?: string;
   employees?: Employee;
 }
+
+export interface MahadaGrowthRecord {
+  id: string;
+  employee_id: string;
+  tanggal: string;
+  jenis_aktivitas: string;
+  status: boolean;
+  catatan?: string;
+  created_at: string;
+  updated_at?: string;
+  employees?: Employee;
+}

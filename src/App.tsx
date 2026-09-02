@@ -55,6 +55,11 @@ import RekapPengajuan from './pages/RekapPengajuan';
 import InventoryAssetPage from './pages/inventory/InventoryAssetPage';
 import RekapInventoryPage from './pages/inventory/RekapInventoryPage';
 
+// Mahada Growth pages
+import MahadaGrowthDashboard from './pages/mahada-growth/Dashboard';
+import MahadaGrowthRiwayat from './pages/mahada-growth/Riwayat';
+import MahadaGrowthLaporan from './pages/mahada-growth/Laporan';
+
 export default function App() {
   return (
     <AuthProvider>
@@ -91,6 +96,12 @@ export default function App() {
           <Route path="inventory">
             <Route path="rekap" element={<ProtectedRoute allowedRoles={['Super Admin', 'Ass Super Admin']}><RekapInventoryPage /></ProtectedRoute>} />
             <Route path=":category" element={<ProtectedRoute allowedRoles={['Super Admin', 'Ass Super Admin']}><InventoryAssetPage /></ProtectedRoute>} />
+          </Route>
+
+          <Route path="mahada-growth">
+            <Route index element={<MahadaGrowthDashboard />} />
+            <Route path="riwayat" element={<MahadaGrowthRiwayat />} />
+            <Route path="laporan" element={<ProtectedRoute allowedRoles={['Super Admin', 'HR']}><MahadaGrowthLaporan /></ProtectedRoute>} />
           </Route>
         </Route>
       </Routes>

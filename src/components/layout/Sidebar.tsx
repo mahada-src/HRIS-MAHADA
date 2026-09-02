@@ -21,6 +21,7 @@ import {
   Shield,
   UserMinus,
   Database,
+  Sprout,
 } from 'lucide-react';
 
 const navigation = [
@@ -61,6 +62,15 @@ const navigation = [
       { name: 'Rekap Asset', href: '/inventory/rekap' },
     ],
   },
+  {
+    name: 'Mahada Growth',
+    icon: Sprout,
+    children: [
+      { name: 'Dashboard', href: '/mahada-growth' },
+      { name: 'Riwayat', href: '/mahada-growth/riwayat' },
+      { name: 'Laporan HR', href: '/mahada-growth/laporan' },
+    ],
+  },
   { name: 'Team Pamit', href: '/team-pamit', icon: UserMinus },
   { name: 'Manajemen User', href: '/manajemen-user', icon: Shield },
 ];
@@ -82,11 +92,27 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
     if (role === 'Super Admin') return true;
     if (role === 'HR') return item.name !== 'Manajemen User';
     if (role === 'Manager' || role === 'Ass Super Admin') return !['Pengaturan', 'Manajemen User'].includes(item.name);
-    return ['Tim Karyawan', 'Detail Data', 'Rekap Absensi', 'Benefit Karyawan', 'Ikatan Dinas', 'Pelanggaran (SP)', 'Pengajuan', 'Administrasi'].includes(item.name);
+    return ['Tim Karyawan', 'Detail Data', 'Rekap Absensi', 'Benefit Karyawan', 'Ikatan Dinas', 'Pelanggaran (SP)', 'Pengajuan', 'Administrasi', 'Mahada Growth'].includes(item.name);
   });
+  
+  // Filter children for Mahada Growth based on role
+  const finalNavigation = filteredNavigation.map(item => {
+    if (item.name === 'Mahada Growth' && item.children) {
+      return {
+        ...item,
+        children: item.children.filter(child => {
+          if (child.name === 'Laporan HR') return ['Super Admin', 'HR'].includes(role);
+          return true;
+        })
+      };
+    }
+    return item;
+  });
+
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     Pengajuan: location.pathname.startsWith('/pengajuan'),
     'Inventory Asset': location.pathname.startsWith('/inventory'),
+    'Mahada Growth': location.pathname.startsWith('/mahada-growth'),
   });
 
   const toggleMenu = (name: string) => {
@@ -105,7 +131,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
         <ul role="list" className="flex flex-1 flex-col gap-y-7">
           <li>
             <ul role="list" className="-mx-2 space-y-1">
-              {filteredNavigation.map((item) => {
+              {finalNavigation.map((item) => {
                 const isActive = item.href === location.pathname;
                 const isChildActive = item.children?.some(
                   (child) => child.href === location.pathname

@@ -397,3 +397,27 @@ ADD COLUMN IF NOT EXISTS processor VARCHAR(255),
 ADD COLUMN IF NOT EXISTS storage VARCHAR(100),
 ADD COLUMN IF NOT EXISTS ram VARCHAR(100),
 ADD COLUMN IF NOT EXISTS last_used DATE;
+
+-- 20. Mahada Growth Records
+CREATE TABLE IF NOT EXISTS public.mahada_growth_records (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    employee_id UUID REFERENCES public.employees(id) ON DELETE CASCADE NOT NULL,
+    tanggal DATE NOT NULL,
+    jenis_aktivitas VARCHAR(255) NOT NULL,
+    status BOOLEAN DEFAULT false,
+    catatan TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    UNIQUE(employee_id, tanggal, jenis_aktivitas)
+);
+
+DROP TRIGGER IF EXISTS update_mahada_growth_records_modtime ON public.mahada_growth_records;
+CREATE TRIGGER update_mahada_growth_records_modtime BEFORE UPDATE ON public.mahada_growth_records FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+
+ALTER TABLE public.mahada_growth_records ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Emp read own growth" ON public.mahada_growth_records FOR SELECT USING (employee_id IN (SELECT id FROM public.employees WHERE user_id = auth.uid()));
+CREATE POLICY "Emp insert own growth" ON public.mahada_growth_records FOR INSERT WITH CHECK (employee_id IN (SELECT id FROM public.employees WHERE user_id = auth.uid()));
+CREATE POLICY "Emp update own growth" ON public.mahada_growth_records FOR UPDATE USING (employee_id IN (SELECT id FROM public.employees WHERE user_id = auth.uid()));
+CREATE POLICY "Emp delete own growth" ON public.mahada_growth_records FOR DELETE USING (employee_id IN (SELECT id FROM public.employees WHERE user_id = auth.uid()));
+CREATE POLICY "Admin HR full growth" ON public.mahada_growth_records FOR ALL USING (get_user_role() IN ('Super Admin', 'HR'));
