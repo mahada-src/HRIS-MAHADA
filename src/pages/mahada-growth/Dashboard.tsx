@@ -15,9 +15,9 @@ import { MahadaGrowthRecord } from '../../types';
 
 const ACTIVITIES = [
   "Daily Ibadah & Growth",
-  "Amal & Growth",
-  "Daily Good Habit",
-  "Ibadah & Self Development",
+  "shalat dhuha",
+  "jurnal syukur",
+  "Shalat Tahajud",
   "Pembiasaan Baik",
   "Jejak Kebaikan",
   "Catatan Kebaikan Harian",

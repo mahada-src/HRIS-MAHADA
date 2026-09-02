@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Employee, Department, MahadaGrowthRecord } from '../../types';
 import { Loader2, Search, Filter, Download, UserCheck } from 'lucide-react';
+import { cn } from '../../lib/utils';
 
 interface EmployeeStat {
   employee: Employee;
