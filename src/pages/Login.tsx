@@ -33,11 +33,16 @@ export default function Login() {
   const fetchEmployees = async () => {
     const { data, error } = await supabase
       .from('employees')
-      .select('id, full_name')
+      .select('id, full_name, employment_status, status_karyawan')
       .order('full_name', { ascending: true });
     
     if (data) {
-      setEmployees(data);
+      const activeEmployees = data.filter(emp => {
+        const empStatus = (emp.employment_status || '').trim().toLowerCase();
+        const statKaryawan = (emp.status_karyawan || '').trim().toLowerCase();
+        return empStatus !== 'resign' && statKaryawan !== 'resign';
+      });
+      setEmployees(activeEmployees);
     }
   };
 
