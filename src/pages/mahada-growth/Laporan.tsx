@@ -38,8 +38,9 @@ export default function Laporan() {
       const { data: empData } = await supabase.from('employees').select('*, departments(*)');
       if (empData) {
           const activeEmployees = empData.filter(emp => {
-              if (!emp.employment_status) return true;
-              return emp.employment_status.trim().toLowerCase() !== 'resign';
+              const empStatus = (emp.employment_status || '').trim().toLowerCase();
+              const statKaryawan = (emp.status_karyawan || '').trim().toLowerCase();
+              return empStatus !== 'resign' && statKaryawan !== 'resign';
           });
           setEmployees(activeEmployees);
       }
