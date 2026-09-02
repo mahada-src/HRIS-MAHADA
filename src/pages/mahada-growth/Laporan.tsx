@@ -35,8 +35,14 @@ export default function Laporan() {
       if (deptData) setDepartments(deptData);
 
       // Fetch Employees with Departments (Only Active)
-      const { data: empData } = await supabase.from('employees').select('*, departments(*)').neq('employment_status', 'Resign');
-      if (empData) setEmployees(empData);
+      const { data: empData } = await supabase.from('employees').select('*, departments(*)');
+      if (empData) {
+          const activeEmployees = empData.filter(emp => {
+              if (!emp.employment_status) return true;
+              return emp.employment_status.trim().toLowerCase() !== 'resign';
+          });
+          setEmployees(activeEmployees);
+      }
 
       // Fetch Records for the selected month
       const startOfMonth = `${filterMonth}-01`;
