@@ -102,7 +102,7 @@ export default function Dashboard() {
       // Weekly stats
       const weeklyRecords = allRecords?.filter(r => r.tanggal >= firstDay && r.tanggal <= lastDay) || [];
       const weekly = weeklyRecords.length;
-      const weeklyTotal = ACTIVITIES.length * 7;
+      const weeklyTotal = 30; // 4 activities * 7 days + 1 activity * 2 days (Mon, Thu)
       
       // Consistency percentage (based on all days since join date or first record)
       let percentage = 0;
@@ -113,7 +113,15 @@ export default function Dashboard() {
           const today = new Date();
           const diffTime = Math.abs(today.getTime() - firstDate.getTime());
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-          const maxPossible = diffDays * ACTIVITIES.length;
+          let maxPossible = 0;
+          let tempDate = new Date(firstDate);
+          while (tempDate <= today) {
+              maxPossible += 4; // 4 daily activities
+              if (tempDate.getDay() === 1 || tempDate.getDay() === 4) {
+                  maxPossible += 1; // Shaum Senin Kamis
+              }
+              tempDate.setDate(tempDate.getDate() + 1);
+          }
           percentage = maxPossible > 0 ? Math.round((total / maxPossible) * 100) : 0;
       }
 
@@ -307,30 +315,38 @@ export default function Dashboard() {
             </div>
         ) : (
             <div className="divide-y divide-slate-100">
-                {ACTIVITIES.map((activity, index) => (
-                    <div key={index} className="p-4 sm:p-6 hover:bg-slate-50/50 transition-colors flex flex-col sm:flex-row gap-4 sm:items-start justify-between">
+                {ACTIVITIES.map((activity, index) => {
+                    const isShaum = activity === "Shaum Senin Kamis";
+                    const selDay = new Date(selectedDate).getDay();
+                    const isAllowed = !isShaum || selDay === 1 || selDay === 4;
+
+                    return (
+                    <div key={index} className={cn("p-4 sm:p-6 transition-colors flex flex-col sm:flex-row gap-4 sm:items-start justify-between", isAllowed ? "hover:bg-slate-50/50" : "opacity-60 bg-slate-50")}>
                         <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
                                     <span className="text-sm font-bold text-slate-500">{index + 1}</span>
                                 </div>
                                 <h3 className="font-semibold text-slate-800">{activity}</h3>
+                                {!isAllowed && <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 text-slate-500">Hanya Senin & Kamis</span>}
                             </div>
                             <div className="sm:pl-11">
                                 <textarea
                                     value={records[activity]?.catatan || ''}
                                     onChange={(e) => handleNoteChange(activity, e.target.value)}
                                     placeholder="Tambahkan catatan (opsional)..."
-                                    className="w-full text-sm p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-none transition-all"
+                                    className="w-full text-sm p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-none transition-all disabled:bg-slate-100 disabled:cursor-not-allowed"
                                     rows={2}
+                                    disabled={!isAllowed}
                                 />
                             </div>
                         </div>
                         <div className="flex items-center gap-2 sm:pl-0 pl-11 shrink-0">
                             <button
                                 onClick={() => handleStatusChange(activity, true)}
+                                disabled={!isAllowed}
                                 className={cn(
-                                    "px-4 py-2 rounded-lg text-sm font-medium transition-all border flex items-center gap-2",
+                                    "px-4 py-2 rounded-lg text-sm font-medium transition-all border flex items-center gap-2 disabled:cursor-not-allowed",
                                     records[activity]?.status === true
                                         ? "bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm"
                                         : "bg-white border-slate-200 text-slate-500 hover:border-emerald-300 hover:bg-emerald-50"
@@ -341,8 +357,9 @@ export default function Dashboard() {
                             </button>
                             <button
                                 onClick={() => handleStatusChange(activity, false)}
+                                disabled={!isAllowed}
                                 className={cn(
-                                    "px-4 py-2 rounded-lg text-sm font-medium transition-all border flex items-center gap-2",
+                                    "px-4 py-2 rounded-lg text-sm font-medium transition-all border flex items-center gap-2 disabled:cursor-not-allowed",
                                     records[activity]?.status === false
                                         ? "bg-red-50 border-red-200 text-red-700 shadow-sm"
                                         : "bg-white border-slate-200 text-slate-500 hover:border-red-300 hover:bg-red-50"
@@ -353,7 +370,7 @@ export default function Dashboard() {
                             </button>
                         </div>
                     </div>
-                ))}
+                )})}
             </div>
         )}
       </div>

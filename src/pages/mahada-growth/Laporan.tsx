@@ -34,8 +34,8 @@ export default function Laporan() {
       const { data: deptData } = await supabase.from('departments').select('*');
       if (deptData) setDepartments(deptData);
 
-      // Fetch Employees with Departments
-      const { data: empData } = await supabase.from('employees').select('*, departments(*)');
+      // Fetch Employees with Departments (Only Active)
+      const { data: empData } = await supabase.from('employees').select('*, departments(*)').neq('employment_status', 'Resign');
       if (empData) setEmployees(empData);
 
       // Fetch Records for the selected month
@@ -72,7 +72,16 @@ export default function Laporan() {
     if (today.toISOString().slice(0, 7) === filterMonth) {
       daysToCount = today.getDate();
     }
-    const maxPossible = daysToCount * 8;
+    let maxPossible = 0;
+    const year = new Date(`${filterMonth}-01`).getFullYear();
+    const month = new Date(`${filterMonth}-01`).getMonth();
+    for (let d = 1; d <= daysToCount; d++) {
+        const tempDate = new Date(year, month, d);
+        maxPossible += 4; // 4 daily activities
+        if (tempDate.getDay() === 1 || tempDate.getDay() === 4) {
+            maxPossible += 1; // Shaum Senin Kamis
+        }
+    }
     const percentage = maxPossible > 0 ? Math.round((total / maxPossible) * 100) : 0;
 
     // Simple streak calculation for the month
