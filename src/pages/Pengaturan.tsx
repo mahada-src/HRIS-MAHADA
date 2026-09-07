@@ -3,12 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
 import { supabase } from '../lib/supabase';
-import { Plus, Trash2, Settings, Database, FolderKey } from 'lucide-react';
+import { Plus, Trash2, Settings, Database, FolderKey, Link as LinkIcon, Info } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 
 export default function Pengaturan() {
   const { employee } = useAuth();
-  const [activeTab, setActiveTab] = useState<'system' | 'master' | 'kategori'>('system');
+  const [activeTab, setActiveTab] = useState<'system' | 'master' | 'kategori' | 'ikatan_dinas'>('system');
 
   // Master Data State
   const [departments, setDepartments] = useState<any[]>([]);
@@ -114,7 +114,7 @@ export default function Pengaturan() {
       <div className="flex space-x-1 rounded-xl bg-slate-100 p-1">
         <button
           onClick={() => setActiveTab('system')}
-          className={`flex items-center justify-center w-1/3 rounded-lg py-2.5 text-sm font-medium leading-5 transition-all
+          className={`flex items-center justify-center w-1/4 rounded-lg py-2.5 text-sm font-medium leading-5 transition-all
             ${activeTab === 'system' ? 'bg-white text-emerald-700 shadow' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
         >
           <Settings className="w-4 h-4 mr-2" />
@@ -122,7 +122,7 @@ export default function Pengaturan() {
         </button>
         <button
           onClick={() => setActiveTab('master')}
-          className={`flex items-center justify-center w-1/3 rounded-lg py-2.5 text-sm font-medium leading-5 transition-all
+          className={`flex items-center justify-center w-1/4 rounded-lg py-2.5 text-sm font-medium leading-5 transition-all
             ${activeTab === 'master' ? 'bg-white text-emerald-700 shadow' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
         >
           <Database className="w-4 h-4 mr-2" />
@@ -130,11 +130,19 @@ export default function Pengaturan() {
         </button>
         <button
           onClick={() => setActiveTab('kategori')}
-          className={`flex items-center justify-center w-1/3 rounded-lg py-2.5 text-sm font-medium leading-5 transition-all
+          className={`flex items-center justify-center w-1/4 rounded-lg py-2.5 text-sm font-medium leading-5 transition-all
             ${activeTab === 'kategori' ? 'bg-white text-emerald-700 shadow' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
         >
           <FolderKey className="w-4 h-4 mr-2" />
           Kategori Administrasi
+        </button>
+        <button
+          onClick={() => setActiveTab('ikatan_dinas')}
+          className={`flex items-center justify-center w-1/4 rounded-lg py-2.5 text-sm font-medium leading-5 transition-all
+            ${activeTab === 'ikatan_dinas' ? 'bg-white text-emerald-700 shadow' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+        >
+          <LinkIcon className="w-4 h-4 mr-2" />
+          Ketentuan Ikatan Dinas
         </button>
       </div>
 
@@ -330,6 +338,79 @@ export default function Pengaturan() {
                 ))}
               </TableBody>
             </Table>
+          </CardContent>
+        </Card>
+      )}
+      {activeTab === 'ikatan_dinas' && (
+        <Card className="max-w-4xl">
+          <CardHeader>
+            <CardTitle className="flex items-center text-emerald-800">
+              <Info className="w-5 h-5 mr-2 text-emerald-600" />
+              Ketentuan Perhitungan Ikatan Dinas
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6 text-sm text-slate-700">
+            <div className="space-y-4">
+              <p className="leading-relaxed">
+                Aplikasi menerapkan logika otomatis untuk menghitung masa berlaku ikatan dinas berdasarkan nominal biaya perjalanan dinas/pendidikan. Berikut adalah ketentuan perhitungan durasi ikatan dinas yang berlaku di sistem:
+              </p>
+              
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <h3 className="font-semibold text-slate-800 mb-3">1. Durasi Berdasarkan Nominal (Biaya)</h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-white">
+                      <TableHead className="font-semibold text-slate-700">Rentang Nominal Biaya</TableHead>
+                      <TableHead className="font-semibold text-slate-700">Durasi Ikatan Dinas</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell>{'<'} Rp 1.000.000</TableCell>
+                      <TableCell className="font-medium text-emerald-600">6 Bulan</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>Rp 1.000.000 - Rp 2.999.999</TableCell>
+                      <TableCell className="font-medium text-emerald-600">12 Bulan (1 Tahun)</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>Rp 3.000.000 - Rp 9.999.999</TableCell>
+                      <TableCell className="font-medium text-emerald-600">24 Bulan (2 Tahun)</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>Rp 10.000.000 - Rp 19.999.999</TableCell>
+                      <TableCell className="font-medium text-emerald-600">36 Bulan (3 Tahun)</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>{'>='} Rp 20.000.000</TableCell>
+                      <TableCell className="font-medium text-emerald-600">48 Bulan (4 Tahun)</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                <h3 className="font-semibold text-amber-800 mb-2">2. Ketentuan Akumulasi (Periode 6 Bulan)</h3>
+                <ul className="list-disc list-inside space-y-2 text-amber-900/80">
+                  <li>
+                    <strong>Penggabungan Biaya:</strong> Jika seorang karyawan melakukan perjalanan dinas/pendidikan kembali dalam kurun waktu <strong>kurang dari atau sama dengan 6 bulan</strong> dari pendidikan pertama di suatu periode, maka biaya akan diakumulasikan.
+                  </li>
+                  <li>
+                    <strong>Pembaruan Durasi:</strong> Setelah biaya diakumulasikan, masa durasi ikatan dinas akan dihitung ulang berdasarkan total biaya baru sesuai dengan tabel durasi di atas.
+                  </li>
+                  <li>
+                    <strong>Titik Awal Perhitungan (Start Date):</strong> Tanggal berakhirnya ikatan dinas selalu dihitung dari tanggal perjalanan dinas <strong>pertama</strong> dalam periode akumulasi tersebut, ditambah dengan durasi bulan yang baru.
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h3 className="font-semibold text-blue-800 mb-2">3. Ketentuan Pemisahan Periode Baru</h3>
+                <p className="text-blue-900/80">
+                  Jika karyawan mengikuti perjalanan dinas/pendidikan yang baru setelah melewati batas <strong>6 bulan</strong> dari pendidikan pertama sebelumnya, maka biaya tidak akan diakumulasikan. Kegiatan ini akan membentuk <strong>Periode Ikatan Dinas Baru</strong> yang memiliki perhitungan nominal dan masa berlakunya sendiri secara terpisah dari periode sebelumnya.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
