@@ -248,8 +248,12 @@ export default function PengajuanSakit() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Lampiran URL</label>
-                <input required type="text" value={medical_certificate_url} onChange={e => setMedical_certificate_url(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
+                <label className="text-sm font-medium text-slate-700">Konfirmasi surat sakit Leader</label>
+                <select required value={medical_certificate_url} onChange={e => setMedical_certificate_url(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                  <option value="">-- Pilih Konfirmasi --</option>
+                  <option value="Dengan Surat Sakit">Dengan Surat Sakit</option>
+                  <option value="Tanpa Surat Sakit">Tanpa Surat Sakit</option>
+                </select>
               </div>
               
 
@@ -269,15 +273,16 @@ export default function PengajuanSakit() {
                 <TableHead>Mulai</TableHead>
                 <TableHead>Selesai</TableHead>
                 <TableHead>Alasan</TableHead>
+                <TableHead>Surat Sakit</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
               ) : filteredData.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-slate-500">Belum ada pengajuan.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-8 text-slate-500">Belum ada pengajuan.</TableCell></TableRow>
               ) : (
                 filteredData.map(item => (
                   <TableRow key={item.id}>
@@ -297,6 +302,10 @@ export default function PengajuanSakit() {
                     
                     <TableCell>
                       {item.reason}
+                    </TableCell>
+
+                    <TableCell>
+                      {item.medical_certificate_url || '-'}
                     </TableCell>
                     
                     <TableCell>

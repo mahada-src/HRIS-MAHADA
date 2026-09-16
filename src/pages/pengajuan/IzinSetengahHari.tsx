@@ -236,6 +236,7 @@ export default function PengajuanIzinSetengahHari() {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Jam Selesai</label>
                 <input required type="time" value={end_time} onChange={e => setEnd_time(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
+                <p className="text-xs text-amber-600 mt-1">*Catatan: Jam yang diinput adalah jam kerja Anda pada hari tersebut.</p>
               </div>
               
               <div className="space-y-2">

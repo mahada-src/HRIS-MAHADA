@@ -35,7 +35,7 @@ export default function PengajuanIzin() {
       setEmployeeId(currentEmployee.id);
     }
   }, [currentEmployee, isAdmin]);
-  const [permission_type, setPermission_type] = useState('');
+  const [permission_type, setPermission_type] = useState('Izin Full');
   const [date, setDate] = useState('');
   const [reason, setReason] = useState('');
 
@@ -221,11 +221,6 @@ export default function PengajuanIzin() {
               
               
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Jenis Izin</label>
-                <input required type="text" value={permission_type} onChange={e => setPermission_type(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
-              </div>
-              
-              <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Tanggal Izin</label>
                 <input required type="date" min={minDateStr} value={date} onChange={e => setDate(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
               </div>
@@ -249,7 +244,6 @@ export default function PengajuanIzin() {
               <TableRow>
                 <TableHead>No. Ref</TableHead>
                 <TableHead>Karyawan</TableHead>
-                <TableHead>Jenis</TableHead>
                 <TableHead>Tanggal</TableHead>
                 <TableHead>Alasan</TableHead>
                 <TableHead>Status</TableHead>
@@ -258,9 +252,9 @@ export default function PengajuanIzin() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
               ) : filteredData.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-slate-500">Belum ada pengajuan.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-slate-500">Belum ada pengajuan.</TableCell></TableRow>
               ) : (
                 filteredData.map(item => (
                   <TableRow key={item.id}>
@@ -268,10 +262,6 @@ export default function PengajuanIzin() {
                     <TableCell>
                       <div className="font-medium text-slate-800">{item.employees?.full_name}</div>
                       <div className="text-xs text-slate-500">{item.employees?.employee_code}</div>
-                    </TableCell>
-                    
-                    <TableCell>
-                      {item.permission_type}
                     </TableCell>
                     
                     <TableCell>
