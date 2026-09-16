@@ -6,6 +6,8 @@ import { supabase } from '../lib/supabase';
 import { Employee } from '../types';
 import { useAuth } from '../lib/AuthContext';
 import { ArrowLeft, User, Briefcase, Phone, Mail, MapPin, Calendar, Clock, AlertTriangle, ShieldCheck, FileText, Eye, Edit, LogOut, Camera, Loader2 } from 'lucide-react';
+import Cropper from 'react-easy-crop';
+import getCroppedImg from '../lib/cropImage';
 import { Badge } from '../components/ui/Badge';
 import {
   Table,
@@ -25,6 +27,14 @@ export default function DetailData() {
   const isManagerOrKaryawan = role === 'Manager' || role === 'Ass Super Admin' || role === 'Karyawan';
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  // Photo Crop State
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [currentFileExt, setCurrentFileExt] = useState('jpeg');
   
   // State for List View
   const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
@@ -144,19 +154,39 @@ export default function DetailData() {
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0 || !employee) return;
     const file = event.target.files[0];
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${employee.id}-${Math.random()}.${fileExt}`;
-    const filePath = `${fileName}`;
+    const fileExt = file.name.split('.').pop() || 'jpeg';
+    setCurrentFileExt(fileExt);
 
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      setImageSrc(reader.result?.toString() || null);
+      setShowCropModal(true);
+    });
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const onCropComplete = (croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  };
+
+  const handleCropSave = async () => {
+    if (!imageSrc || !croppedAreaPixels || !employee) return;
     setUploadingPhoto(true);
     try {
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
+      const croppedFile = await getCroppedImg(imageSrc, croppedAreaPixels);
+      if (!croppedFile) throw new Error("Gagal memproses gambar");
+
+      const fileName = `${employee.id}-${Math.random()}.${currentFileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, croppedFile);
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
 
       if (loggedInEmployee?.id === employee.id) {
-        const { error: updateError } = await supabase.rpc('update_profile_photo', { new_photo_url: publicUrl });
+        const { error: updateError } = await supabase.rpc('update_profile_photo', { emp_id: employee.id, new_photo_url: publicUrl });
         if (updateError) throw updateError;
         if (refreshEmployee) await refreshEmployee();
       } else {
@@ -165,6 +195,8 @@ export default function DetailData() {
       }
 
       await fetchEmployeeData(employee.id);
+      setShowCropModal(false);
+      setImageSrc(null);
     } catch (error: any) {
       alert('Gagal mengunggah foto: ' + error.message);
     } finally {
@@ -669,6 +701,61 @@ export default function DetailData() {
               <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleSaveEdit} disabled={isSaving}>
                 {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CROP MODAL */}
+      {showCropModal && imageSrc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 overflow-hidden">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg flex flex-col overflow-hidden h-[80vh]">
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 shrink-0">
+              <h2 className="text-lg font-semibold text-slate-800">Atur Foto Profil</h2>
+              <button onClick={() => { setShowCropModal(false); setImageSrc(null); }} className="text-slate-400 hover:text-slate-600">
+                <ArrowLeft className="h-5 w-5 rotate-180" />
+              </button>
+            </div>
+            
+            <div className="flex-1 relative bg-slate-900 min-h-[300px]">
+              <Cropper
+                image={imageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            </div>
+            
+            <div className="p-4 bg-white border-t border-slate-100 shrink-0 space-y-4">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-slate-600">Zoom</span>
+                <input
+                  type="range"
+                  value={zoom}
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  aria-labelledby="Zoom"
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                />
+              </div>
+              
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="outline" onClick={() => { setShowCropModal(false); setImageSrc(null); }} disabled={uploadingPhoto}>Batal</Button>
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleCropSave} disabled={uploadingPhoto}>
+                  {uploadingPhoto ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Mengunggah...</>
+                  ) : (
+                    'Simpan & Unggah'
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
