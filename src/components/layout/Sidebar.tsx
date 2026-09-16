@@ -93,7 +93,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
     if (role === 'Super Admin') return true;
     if (role === 'HR') return item.name !== 'Manajemen User';
     if (role === 'Manager' || role === 'Ass Super Admin') return !['Pengaturan', 'Manajemen User'].includes(item.name);
-    return ['Tim Karyawan', 'Detail Data', 'Rekap Absensi', 'Benefit Karyawan', 'Ikatan Dinas', 'Pelanggaran (SP)', 'Pengajuan', 'Administrasi', 'Mahada Growth'].includes(item.name);
+    return ['Detail Data', 'Benefit Karyawan', 'Ikatan Dinas', 'Pelanggaran (SP)', 'Pengajuan', 'Administrasi', 'Mahada Growth'].includes(item.name);
   });
   
   // Filter children for Mahada Growth based on role

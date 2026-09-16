@@ -59,6 +59,7 @@ export default function DetailData() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editData, setEditData] = useState<Partial<Employee>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [inventoryAssets, setInventoryAssets] = useState<any[]>([]);
 
   useEffect(() => {
     if (id) {
@@ -121,6 +122,9 @@ export default function DetailData() {
         
         const ben = await supabase.from('benefits').select('*').eq('employee_id', employeeId);
         if (ben.data) setBenefits(ben.data);
+
+        const inv = await supabase.from('inventory_assets').select('*').eq('employee_id', employeeId);
+        if (inv.data) setInventoryAssets(inv.data);
 
         // Fetch all active requests
         const requestTables = [
@@ -243,19 +247,21 @@ export default function DetailData() {
           <p className="text-sm text-slate-500">Pilih karyawan di bawah ini untuk melihat detail lengkap profil dan riwayat mereka.</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="flex rounded-lg border border-slate-200 overflow-x-auto w-full">
-            {['Semua', 'Karyawan Tetap', 'Internship', 'Kontrak', 'Freelance', 'Probation'].map(status => (
-              <button 
-                key={status}
-                className={`px-4 py-2 text-sm font-semibold whitespace-nowrap border-r border-slate-200 last:border-r-0 hover:bg-slate-50 transition-colors ${employmentFilter === status ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
-                onClick={() => setEmploymentFilter(status)}
-              >
-                {status}
-              </button>
-            ))}
+        {role !== 'Karyawan' && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex rounded-lg border border-slate-200 overflow-x-auto w-full">
+              {['Semua', 'Karyawan Tetap', 'Internship', 'Kontrak', 'Freelance', 'Probation'].map(status => (
+                <button 
+                  key={status}
+                  className={`px-4 py-2 text-sm font-semibold whitespace-nowrap border-r border-slate-200 last:border-r-0 hover:bg-slate-50 transition-colors ${employmentFilter === status ? 'bg-slate-100 text-slate-800' : 'bg-white text-slate-500'}`}
+                  onClick={() => setEmploymentFilter(status)}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <Card>
           <CardContent className="p-0">
@@ -515,12 +521,20 @@ export default function DetailData() {
                     {isBPJSEligible ? 'Memenuhi Syarat' : 'Belum Memenuhi Syarat'}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className={`flex justify-between items-center ${inventoryAssets.length > 0 ? 'border-b border-slate-100 pb-3' : ''}`}>
                   <span className="text-sm font-medium text-slate-700">Program Qurban</span>
                   <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
                     {qurbanStatus}
                   </span>
                 </div>
+                {inventoryAssets.map((asset, idx) => (
+                  <div key={asset.id} className={`flex justify-between items-center ${idx !== inventoryAssets.length - 1 ? 'border-b border-slate-100 pb-3' : ''}`}>
+                    <span className="text-sm font-medium text-slate-700">{asset.asset_name}</span>
+                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                      {asset.inventory_code || '-'}
+                    </span>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

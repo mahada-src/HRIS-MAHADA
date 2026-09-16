@@ -26,6 +26,10 @@ export default function PengajuanIzinSepertigaHari() {
   const isManager = role === 'Manager';
   const isKaryawan = role === 'Karyawan';
 
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const minDateStr = isKaryawan ? tomorrow.toISOString().split('T')[0] : undefined;
+
   useEffect(() => {
     if (currentEmployee && !isAdmin) {
       setEmployeeId(currentEmployee.id);
@@ -221,7 +225,7 @@ export default function PengajuanIzinSepertigaHari() {
               
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Tanggal</label>
-                <input required type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
+                <input required type="date" min={minDateStr} value={date} onChange={e => setDate(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" />
               </div>
               
               <div className="space-y-2">

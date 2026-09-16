@@ -15,7 +15,7 @@ export default function InventoryAssetPage() {
   const [loading, setLoading] = useState(true);
   
   // Status Filter State
-  const [statusFilter, setStatusFilter] = useState<'Semua' | 'Terpakai' | 'Tidak Dipakai'>('Semua');
+  const [statusFilter, setStatusFilter] = useState<'Semua' | 'Terpakai' | 'Tidak Dipakai'>('Terpakai');
   
   const { employee } = useAuth();
   const role = employee?.role || 'Karyawan';
@@ -226,14 +226,15 @@ export default function InventoryAssetPage() {
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4 whitespace-nowrap">HARGA</TableHead>
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4 whitespace-nowrap">STATUS</TableHead>
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4 whitespace-nowrap">KONDISI</TableHead>
+                <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4 whitespace-nowrap">TGL TERAKHIR PAKAI</TableHead>
                 <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4 whitespace-nowrap text-center w-24">AKSI</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-slate-100">
               {loading ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
               ) : displayedAssets.length === 0 ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-8 text-slate-500">Tidak ada data asset untuk status ini.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center py-8 text-slate-500">Tidak ada data asset untuk status ini.</TableCell></TableRow>
               ) : displayedAssets.map(asset => (
                 <TableRow key={asset.id} className="hover:bg-slate-50">
                   <TableCell className="font-medium text-slate-800 whitespace-nowrap">{asset.asset_name}</TableCell>
@@ -252,6 +253,9 @@ export default function InventoryAssetPage() {
                       <span>{asset.asset_condition || '-'}</span>
                       {asset.condition_notes && <span className="text-[10px] text-slate-400 max-w-[120px] truncate">{asset.condition_notes}</span>}
                     </div>
+                  </TableCell>
+                  <TableCell className="text-slate-600 whitespace-nowrap">
+                    {(asset as any).last_used ? new Date((asset as any).last_used).toLocaleDateString('id-ID') : '-'}
                   </TableCell>
                   <TableCell className="text-center whitespace-nowrap">
                     <div className="flex justify-center gap-2">
