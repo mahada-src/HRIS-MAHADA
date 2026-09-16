@@ -83,7 +83,7 @@ export default function ExitDetail() {
   };
 
   const fetchApproverNames = async (empData: any) => {
-    const { data: allEmps } = await supabase.from('employees').select('id, full_name, role, employee_code, departments(name), positions(title)');
+    const { data: allEmps } = await supabase.from('employees').select('id, full_name, role, employee_code, departments(name), positions(title)').neq('status_karyawan', 'Resign').neq('status_karyawan', 'PHK').neq('status_karyawan', 'Inactive');
     if(!allEmps) return;
     
     const names: Record<string, string> = {};

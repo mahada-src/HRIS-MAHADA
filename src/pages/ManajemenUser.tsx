@@ -27,6 +27,9 @@ export default function ManajemenUser() {
     const { data, error } = await supabase
       .from('employees')
       .select(`id, full_name, email, role, password`)
+      .neq('status_karyawan', 'Resign')
+      .neq('status_karyawan', 'PHK')
+      .neq('status_karyawan', 'Inactive')
       .order('full_name', { ascending: true });
     
     if (error) console.error('Error fetching employees:', error);

@@ -30,7 +30,7 @@ export default function IkatanDinas() {
   }, []);
 
   const fetchEmployees = async () => {
-    let query = supabase.from('employees').select('id, full_name, employee_code, department_id').order('full_name');
+    let query = supabase.from('employees').select('id, full_name, employee_code, department_id').neq('status_karyawan', 'Resign').neq('status_karyawan', 'PHK').neq('status_karyawan', 'Inactive').order('full_name');
     if (role === 'Karyawan') {
       query = query.eq('id', currentUser?.id);
     } else if (role === 'Manager' || role === 'Ass Super Admin') {

@@ -38,7 +38,7 @@ export default function RekapAbsensi() {
     setLoading(true);
     
     // Fetch Employees
-    let empQuery = supabase.from('employees').select('id, full_name, employee_code, department_id').order('employee_code', { ascending: false });
+    let empQuery = supabase.from('employees').select('id, full_name, employee_code, department_id').neq('status_karyawan', 'Resign').neq('status_karyawan', 'PHK').neq('status_karyawan', 'Inactive').order('employee_code', { ascending: false });
     if (role === 'Karyawan') {
       empQuery = empQuery.eq('id', currentUser?.id);
     } else if (role === 'Manager') {

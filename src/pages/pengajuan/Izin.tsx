@@ -41,7 +41,7 @@ export default function PengajuanIzin() {
   }, []);
 
   const fetchEmployees = async () => {
-    let query = supabase.from('employees').select('id, full_name, employee_code, department_id').order('full_name');
+    let query = supabase.from('employees').select('id, full_name, employee_code, department_id').neq('status_karyawan', 'Resign').neq('status_karyawan', 'PHK').neq('status_karyawan', 'Inactive').order('full_name');
     if (isKaryawan) {
       query = query.eq('id', currentEmployee?.id);
     } else if (isManager) {

@@ -20,6 +20,9 @@ export default function BenefitKaryawan() {
     let query = supabase
       .from('employees')
       .select('*, departments(name)')
+      .neq('status_karyawan', 'Resign')
+      .neq('status_karyawan', 'PHK')
+      .neq('status_karyawan', 'Inactive')
       .order('employee_code', { ascending: false });
       
     if (role === 'Karyawan') {
