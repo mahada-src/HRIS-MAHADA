@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Menu, Search, Bell, User } from 'lucide-react';
 import { Button } from '../ui/Button';
 
@@ -7,6 +7,8 @@ interface HeaderProps {
 }
 
 export default function Header({ onMenuClick }: HeaderProps) {
+  const [showNotifications, setShowNotifications] = useState(false);
+
   return (
     <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-x-4 border-b border-slate-200 bg-white px-4 sm:gap-x-6 sm:px-6 lg:px-8">
       <button
@@ -35,12 +37,34 @@ export default function Header({ onMenuClick }: HeaderProps) {
           </div>
         </div>
         <div className="flex items-center gap-x-4 lg:gap-x-6">
-          <button type="button" className="relative text-slate-400 hover:text-slate-500">
-            <span className="sr-only">View notifications</span>
-            <Bell className="h-5 w-5" aria-hidden="true" />
-            <span className="absolute -right-0.5 -top-0.5 block h-2 w-2 rounded-full border-2 border-white bg-red-500" />
-          </button>
+          <div className="relative">
+            <button 
+              type="button" 
+              className="relative text-slate-400 hover:text-slate-500 focus:outline-none"
+              onClick={() => setShowNotifications(!showNotifications)}
+            >
+              <span className="sr-only">View notifications</span>
+              <Bell className="h-5 w-5" aria-hidden="true" />
+              <span className="absolute -right-0.5 -top-0.5 block h-2 w-2 rounded-full border-2 border-white bg-red-500" />
+            </button>
 
+            {showNotifications && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowNotifications(false)}></div>
+                <div className="absolute right-0 mt-2 w-80 origin-top-right rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20 overflow-hidden">
+                  <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <h3 className="text-sm font-semibold text-slate-800">Notifikasi</h3>
+                    <span className="text-xs text-emerald-600 cursor-pointer hover:underline" onClick={() => setShowNotifications(false)}>Tandai semua dibaca</span>
+                  </div>
+                  <div className="p-8 text-center">
+                    <Bell className="h-8 w-8 text-slate-200 mx-auto mb-3" />
+                    <p className="text-sm text-slate-500 font-medium">Belum ada notifikasi baru</p>
+                    <p className="text-xs text-slate-400 mt-1">Anda sudah melihat semuanya.</p>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
           <div className="hidden lg:flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-semibold text-slate-600">
             <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></span>
             {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../lib/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -22,6 +22,7 @@ import {
   UserMinus,
   Database,
   Sprout,
+  Download,
 } from 'lucide-react';
 
 const navigation = [
@@ -96,6 +97,31 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
     return ['Detail Data', 'Benefit Karyawan', 'Ikatan Dinas', 'Pelanggaran (SP)', 'Pengajuan', 'Administrasi', 'Mahada Growth'].includes(item.name);
   });
   
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    }
+  };
+
   // Filter children for Mahada Growth based on role
   const finalNavigation = filteredNavigation.map(item => {
     if (item.name === 'Mahada Growth' && item.children) {
@@ -221,7 +247,13 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
         </ul>
       </nav>
 
-      <div className="px-2 mt-4">
+      <div className="px-2 mt-4 flex flex-col gap-2">
+        {deferredPrompt && (
+          <button onClick={handleInstallClick} className="flex w-full items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 border border-emerald-500/20 transition-all bg-emerald-500/5">
+            <Download className="h-5 w-5 shrink-0" />
+            Install Aplikasi
+          </button>
+        )}
         <button onClick={() => signOut()} className="flex w-full items-center gap-x-3 rounded-md px-3 py-2 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
           <LogOut className="h-5 w-5 shrink-0" />
           Keluar
