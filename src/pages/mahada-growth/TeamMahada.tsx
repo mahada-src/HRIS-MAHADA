@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { supabase } from '../../lib/supabase';
 import { Employee } from '../../types';
-import { Users } from 'lucide-react';
+import { Users, X } from 'lucide-react';
 
 export default function TeamMahada() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTeam();
@@ -54,7 +55,12 @@ export default function TeamMahada() {
             <CardContent className="p-4 flex flex-col items-center text-center space-y-3">
               <div className="h-24 w-24 rounded-full bg-emerald-100 flex items-center justify-center overflow-hidden border border-emerald-200 shrink-0 text-xl font-bold text-emerald-700">
                 {emp.photo_url ? (
-                  <img src={emp.photo_url} alt={emp.full_name} className="h-full w-full object-cover" />
+                  <img 
+                    src={emp.photo_url} 
+                    alt={emp.full_name} 
+                    className="h-full w-full object-cover cursor-pointer hover:opacity-80 transition-opacity" 
+                    onClick={() => setSelectedPhoto(emp.photo_url!)} 
+                  />
                 ) : (
                   emp.full_name?.substring(0, 2).toUpperCase() || 'US'
                 )}
@@ -74,6 +80,20 @@ export default function TeamMahada() {
       {employees.length === 0 && (
         <div className="text-center py-12 text-slate-500 border border-slate-200 rounded-xl border-dashed bg-slate-50">
           Belum ada data anggota tim.
+        </div>
+      )}
+
+      {selectedPhoto && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setSelectedPhoto(null)}>
+          <div className="relative max-w-2xl max-h-[90vh] w-full rounded-2xl overflow-hidden shadow-2xl bg-slate-900 flex justify-center items-center" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="absolute top-4 right-4 bg-black/50 hover:bg-black/80 text-white rounded-full p-2 transition-colors z-10"
+              onClick={() => setSelectedPhoto(null)}
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <img src={selectedPhoto} alt="Profil Karyawan" className="w-full h-auto object-contain" style={{ maxHeight: '90vh' }} />
+          </div>
         </div>
       )}
     </div>
