@@ -64,11 +64,13 @@ export default function DetailData() {
   useEffect(() => {
     if (id) {
       fetchEmployeeData(id);
+    } else if (role === 'Karyawan' && loggedInEmployee?.id) {
+      fetchEmployeeData(loggedInEmployee.id);
     } else {
       fetchAllEmployees();
     }
     fetchMasterData();
-  }, [id]);
+  }, [id, role, loggedInEmployee?.id]);
 
   const fetchMasterData = async () => {
     const [depRes, posRes] = await Promise.all([
@@ -233,7 +235,7 @@ export default function DetailData() {
   // -----------------------------------------------------------
   // LIST VIEW
   // -----------------------------------------------------------
-  if (!id) {
+  if (!id && role !== 'Karyawan') {
     const activeEmployees = allEmployees.filter(emp => emp.status_karyawan === 'Aktif' || !emp.status_karyawan);
     const filteredEmployees = activeEmployees.filter(emp => {
       if (employmentFilter === 'Semua') return true;
@@ -358,9 +360,11 @@ export default function DetailData() {
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-10">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/detail')} className="mr-2">
-          <ArrowLeft className="h-4 w-4 mr-2" /> Kembali
-        </Button>
+        {role !== 'Karyawan' && (
+          <Button variant="ghost" size="sm" onClick={() => navigate('/detail')} className="mr-2">
+            <ArrowLeft className="h-4 w-4 mr-2" /> Kembali
+          </Button>
+        )}
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-800">Profil: {employee.full_name}</h1>
           <p className="text-sm text-slate-500">Informasi lengkap karyawan, absensi, dan riwayat.</p>
