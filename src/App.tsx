@@ -60,6 +60,8 @@ import MahadaGrowthDashboard from './pages/mahada-growth/Dashboard';
 import MahadaGrowthRiwayat from './pages/mahada-growth/Riwayat';
 import MahadaGrowthLaporan from './pages/mahada-growth/Laporan';
 
+import MahadaGrowthTeam from './pages/mahada-growth/TeamMahada';
+
 export default function App() {
   return (
     <AuthProvider>
@@ -100,6 +102,7 @@ export default function App() {
 
           <Route path="mahada-growth">
             <Route index element={<MahadaGrowthDashboard />} />
+            <Route path="team" element={<MahadaGrowthTeam />} />
             <Route path="riwayat" element={<MahadaGrowthRiwayat />} />
             <Route path="laporan" element={<ProtectedRoute allowedRoles={['Super Admin', 'HR']}><MahadaGrowthLaporan /></ProtectedRoute>} />
           </Route>
