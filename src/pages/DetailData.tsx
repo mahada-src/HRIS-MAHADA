@@ -335,6 +335,20 @@ export default function DetailData() {
   if (loadingDetail) return <div className="p-8 text-center text-slate-500">Memuat data karyawan...</div>;
   if (!employee) return <div className="p-8 text-center text-slate-500">Data karyawan tidak ditemukan.</div>;
 
+  const startStr = employee.tgl_tetap || employee.join_date || employee.tgl_probation;
+  let lamaKerjaYears = 0;
+  if (startStr) {
+    const start = new Date(startStr);
+    const today = new Date();
+    lamaKerjaYears = today.getFullYear() - start.getFullYear();
+    let m = today.getMonth() - start.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < start.getDate())) lamaKerjaYears--;
+  }
+  
+  const isUmrohEligible = lamaKerjaYears >= 5;
+  const isBPJSEligible = lamaKerjaYears >= 2;
+  const qurbanStatus = employee.program_qurban === 'Berqurban' ? 'Berqurban (Done)' : (employee.program_qurban || '-');
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-10">
       <div className="flex items-center gap-4">
@@ -477,30 +491,40 @@ export default function DetailData() {
             </CardContent>
           </Card>
           
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> Benefit & Fasilitas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {benefits.length > 0 ? (
-                <ul className="space-y-3">
-                  {benefits.map(b => (
-                    <li key={b.id} className="text-sm flex justify-between border-b border-slate-50 pb-2">
-                      <span className="font-medium text-slate-700">{b.benefit_type}</span>
-                      <span className="text-slate-500">{b.amount ? `Rp ${b.amount.toLocaleString('id-ID')}` : '-'}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-slate-500 italic">Belum ada data benefit</p>
-              )}
-            </CardContent>
-          </Card>
+
         </div>
 
         {/* Kolom Kanan: Detail & Riwayat */}
         <div className="space-y-6 md:col-span-2">
           
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> Benefit & Fasilitas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <span className="text-sm font-medium text-slate-700">Umroh</span>
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${isUmrohEligible ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
+                    {isUmrohEligible ? 'Memenuhi Syarat' : 'Belum Memenuhi Syarat'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <span className="text-sm font-medium text-slate-700">BPJS</span>
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${isBPJSEligible ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
+                    {isBPJSEligible ? 'Memenuhi Syarat' : 'Belum Memenuhi Syarat'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-slate-700">Program Qurban</span>
+                  <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                    {qurbanStatus}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Riwayat Pelanggaran</CardTitle>

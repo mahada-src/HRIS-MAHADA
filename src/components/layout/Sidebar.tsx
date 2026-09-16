@@ -67,8 +67,8 @@ const navigation = [
     icon: Sprout,
     children: [
       { name: 'Dashboard', href: '/mahada-growth' },
-      { name: 'Team Mahada', href: '/mahada-growth/team' },
       { name: 'Riwayat', href: '/mahada-growth/riwayat' },
+      { name: 'Team Mahada', href: '/mahada-growth/team' },
       { name: 'Laporan HR', href: '/mahada-growth/laporan' },
     ],
   },
