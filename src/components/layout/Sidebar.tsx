@@ -228,7 +228,13 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
       </div>
       <div className="mt-auto border-t border-slate-800 bg-slate-900/50 p-4 -mx-3 -mb-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-700 text-xs font-bold text-white uppercase">{employee?.full_name?.substring(0,2) || 'US'}</div>
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-700 overflow-hidden shrink-0 border border-slate-600 text-xs font-bold text-white uppercase">
+            {employee?.photo_url ? (
+              <img src={employee.photo_url} alt={employee.full_name} className="h-full w-full object-cover" />
+            ) : (
+              employee?.full_name?.substring(0,2) || 'US'
+            )}
+          </div>
           <div className="flex flex-col">
             <span className="text-xs font-semibold text-white">{employee?.full_name || 'User'}</span>
             <span className="text-[10px] text-slate-500">{employee?.role || 'Karyawan'}</span>

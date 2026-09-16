@@ -49,6 +49,7 @@ export interface Employee {
   employment_status?: string;
   join_date?: string;
   email?: string;
+  photo_url?: string;
   created_at?: string;
   updated_at?: string;
   departments?: Department;

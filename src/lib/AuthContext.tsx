@@ -8,6 +8,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (employeeId: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshEmployee: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   signIn: async () => {},
   signOut: async () => {},
+  refreshEmployee: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -67,8 +69,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setEmployee(null);
   };
 
+  const refreshEmployee = async () => {
+    if (user?.id) {
+      await fetchEmployee(user.id);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, employee, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, employee, loading, signIn, signOut, refreshEmployee }}>
       {children}
     </AuthContext.Provider>
   );

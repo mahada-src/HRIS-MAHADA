@@ -5,7 +5,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Employee } from '../types';
 import { useAuth } from '../lib/AuthContext';
-import { ArrowLeft, User, Briefcase, Phone, Mail, MapPin, Calendar, Clock, AlertTriangle, ShieldCheck, FileText, Eye, Edit, LogOut } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, Phone, Mail, MapPin, Calendar, Clock, AlertTriangle, ShieldCheck, FileText, Eye, Edit, LogOut, Camera, Loader2 } from 'lucide-react';
 import { Badge } from '../components/ui/Badge';
 import {
   Table,
@@ -20,9 +20,11 @@ export default function DetailData() {
   const [searchParams] = useSearchParams();
   const id = searchParams.get('id');
   const navigate = useNavigate();
-  const { employee: loggedInEmployee } = useAuth();
+  const { employee: loggedInEmployee, refreshEmployee } = useAuth();
   const role = loggedInEmployee?.role || 'Karyawan';
   const isManagerOrKaryawan = role === 'Manager' || role === 'Ass Super Admin' || role === 'Karyawan';
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   
   // State for List View
   const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
@@ -139,6 +141,37 @@ export default function DetailData() {
     setLoadingDetail(false);
   };
 
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0 || !employee) return;
+    const file = event.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${employee.id}-${Math.random()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    setUploadingPhoto(true);
+    try {
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+
+      if (loggedInEmployee?.id === employee.id) {
+        const { error: updateError } = await supabase.rpc('update_profile_photo', { new_photo_url: publicUrl });
+        if (updateError) throw updateError;
+        if (refreshEmployee) await refreshEmployee();
+      } else {
+        const { error: updateError } = await supabase.from('employees').update({ photo_url: publicUrl }).eq('id', employee.id);
+        if (updateError) throw updateError;
+      }
+
+      await fetchEmployeeData(employee.id);
+    } catch (error: any) {
+      alert('Gagal mengunggah foto: ' + error.message);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const handleSaveEdit = async () => {
     if (!employee?.id) return;
     setIsSaving(true);
@@ -224,8 +257,12 @@ export default function DetailData() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center font-bold text-emerald-700 text-xs">
-                                {emp.full_name?.substring(0, 2).toUpperCase() || 'EMP'}
+                              <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center overflow-hidden border border-emerald-200 shrink-0 text-xs font-bold text-emerald-700">
+                                {emp.photo_url ? (
+                                  <img src={emp.photo_url} alt={emp.full_name} className="h-full w-full object-cover" />
+                                ) : (
+                                  emp.full_name?.substring(0, 2).toUpperCase() || 'EMP'
+                                )}
                               </div>
                               <span className="font-semibold text-slate-800">{emp.full_name}</span>
                             </div>
@@ -299,8 +336,33 @@ export default function DetailData() {
             </CardHeader>
             <CardContent className="pt-4">
               <div className="flex flex-col items-center text-center space-y-4">
-                <div className="h-24 w-24 rounded-full bg-emerald-100 flex items-center justify-center font-bold text-emerald-700 text-3xl shadow-sm">
-                  {employee.full_name?.substring(0, 2).toUpperCase() || 'EMP'}
+                <div className="relative group">
+                  <div className="h-28 w-28 rounded-full bg-emerald-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-md font-bold text-emerald-700 text-3xl">
+                    {employee.photo_url ? (
+                      <img src={employee.photo_url} alt={employee.full_name} className="h-full w-full object-cover" />
+                    ) : (
+                      employee.full_name?.substring(0, 2).toUpperCase() || 'EMP'
+                    )}
+                  </div>
+                  
+                  {/* Tampilkan tombol edit foto jika ini profil sendiri atau role adalah admin */}
+                  {(loggedInEmployee?.id === employee.id || !isManagerOrKaryawan) && (
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingPhoto}
+                      className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-sm hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                      title="Ubah Foto Profil"
+                    >
+                      {uploadingPhoto ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                    </button>
+                  )}
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    ref={fileInputRef} 
+                    onChange={handlePhotoUpload} 
+                  />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-slate-800">{employee.full_name}</h2>
