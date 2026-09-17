@@ -85,14 +85,14 @@ export default function Dashboard() {
 
     // Menunggu persetujuan dan Data pengajuan untuk chart
     const requestTablesConfig = [
-      { table: 'sick_requests', type: 'Sakit', label: 'Sakit', dateCol: 'start_date' },
-      { table: 'permission_requests', type: 'Izin', label: 'Izin Full', dateCol: 'date' },
-      { table: 'half_day_requests', type: 'Izin Setengah Hari', label: 'Izin 1/2', dateCol: 'date' },
-      { table: 'one_third_day_requests', type: 'Izin Sepertiga Hari', label: 'Izin 1/3', dateCol: 'date' },
-      { table: 'late_requests', type: 'Telat', label: 'Telat', dateCol: 'date' },
-      { table: 'wfh_requests', type: 'WFH', label: 'WFH', dateCol: 'date' },
-      { table: 'leave_requests', type: 'Cuti', label: 'Cuti', dateCol: 'start_date' },
-      { table: 'overtime_requests', type: 'Lembur', label: 'Lembur', dateCol: 'date' }
+      { table: 'sick_requests', type: 'Sakit', label: 'Sakit', dateCol: 'start_date', path: '/pengajuan/sakit' },
+      { table: 'permission_requests', type: 'Izin', label: 'Izin Full', dateCol: 'date', path: '/pengajuan/izin' },
+      { table: 'half_day_requests', type: 'Izin Setengah Hari', label: 'Izin 1/2', dateCol: 'date', path: '/pengajuan/izin-setengah-hari' },
+      { table: 'one_third_day_requests', type: 'Izin Sepertiga Hari', label: 'Izin 1/3', dateCol: 'date', path: '/pengajuan/izin-sepertiga-hari' },
+      { table: 'late_requests', type: 'Telat', label: 'Telat', dateCol: 'date', path: '/pengajuan/telat' },
+      { table: 'wfh_requests', type: 'WFH', label: 'WFH', dateCol: 'date', path: '/pengajuan/wfh' },
+      { table: 'leave_requests', type: 'Cuti', label: 'Cuti', dateCol: 'start_date', path: '/pengajuan/cuti' },
+      { table: 'overtime_requests', type: 'Lembur', label: 'Lembur', dateCol: 'date', path: '/pengajuan/lembur' }
     ];
 
     // Investasi Ikatan Dinas
@@ -164,7 +164,12 @@ export default function Dashboard() {
     
     reqResults.forEach(res => {
       // Add to pending list
-      const pendingItems = res.pendingData.map((d: any) => ({ ...d, requestType: res.config.type }));
+      const pendingItems = res.pendingData.map((d: any) => ({ 
+        ...d, 
+        requestType: res.config.label, 
+        requestDate: d[res.config.dateCol],
+        requestPath: res.config.path
+      }));
       allPending = allPending.concat(pendingItems);
       
       // Count for period chart
@@ -431,15 +436,30 @@ export default function Dashboard() {
           <CardContent className="p-4 flex-1 overflow-auto max-h-[332px]">
             <div className="grid sm:grid-cols-1 gap-4">
               {recentRequests.length > 0 ? recentRequests.map((r, i) => (
-                <div key={i} className="flex flex-col p-3 rounded-lg border border-slate-100 bg-slate-50">
-                  <div className="flex items-center gap-2 mb-2">
+                <div 
+                  key={i} 
+                  className="flex flex-col p-3 rounded-lg border border-slate-100 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors"
+                  onClick={() => navigate(r.requestPath)}
+                >
+                  <div className="flex items-start justify-between gap-2 mb-2">
                     <span className="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
                       {r.requestType}
                     </span>
-                    <span className="text-xs text-slate-400 ml-auto">{new Date(r.created_at).toLocaleDateString('id-ID')}</span>
+                    <div className="text-right">
+                      <div className="text-xs font-bold text-slate-700">{r.requestDate ? new Date(r.requestDate).toLocaleDateString('id-ID') : '-'}</div>
+                      <div className="text-[10px] text-slate-400">Dibuat: {new Date(r.created_at).toLocaleDateString('id-ID')}</div>
+                    </div>
                   </div>
                   <p className="text-sm font-semibold text-slate-800">{r.employees?.full_name}</p>
-                  <p className="text-xs text-slate-500 mt-1 line-clamp-2">{r.reason || r.target_work || '-'}</p>
+                  <div className="flex justify-between items-end mt-1">
+                    <p className="text-xs text-slate-500 line-clamp-2 flex-1 pr-2">{r.reason || r.target_work || '-'}</p>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); navigate(r.requestPath); }}
+                      className="text-[10px] font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded transition-colors whitespace-nowrap border border-emerald-200"
+                    >
+                      Lihat Detail
+                    </button>
+                  </div>
                 </div>
               )) : (
                 <p className="text-sm text-slate-500 italic">Tidak ada pengajuan yang menunggu persetujuan.</p>
