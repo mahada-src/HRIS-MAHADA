@@ -130,7 +130,7 @@ export default function Pengaturan() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 w-full">
       <div>
         <h1 className="text-xl font-bold tracking-tight text-slate-800">Pengaturan</h1>
         <p className="text-sm text-slate-500">Konfigurasi sistem dan manajemen data master HRIS.</p>
@@ -332,7 +332,7 @@ export default function Pengaturan() {
       )}
 
       {activeTab === 'kategori' && (
-        <Card className="max-w-2xl">
+        <Card className="w-full">
           <CardHeader>
             <CardTitle>Kategori Administrasi Dokumen</CardTitle>
           </CardHeader>
@@ -376,7 +376,7 @@ export default function Pengaturan() {
       )}
 
       {activeTab === 'kategori_sapras' && (
-        <Card className="max-w-2xl">
+        <Card className="w-full">
           <CardHeader>
             <CardTitle>Kategori Sapras HR</CardTitle>
           </CardHeader>
@@ -419,7 +419,7 @@ export default function Pengaturan() {
         </Card>
       )}
       {activeTab === 'ikatan_dinas' && (
-        <Card className="max-w-4xl">
+        <Card className="w-full">
           <CardHeader>
             <CardTitle className="flex items-center text-emerald-800">
               <Info className="w-5 h-5 mr-2 text-emerald-600" />

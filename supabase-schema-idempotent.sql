@@ -551,7 +551,12 @@ ALTER TABLE public.sapras_hr_categories ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public read sapras_hr_categories" ON public.sapras_hr_categories;
 CREATE POLICY "Public read sapras_hr_categories" ON public.sapras_hr_categories FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Admin write sapras_hr_categories" ON public.sapras_hr_categories;
-CREATE POLICY "Admin write sapras_hr_categories" ON public.sapras_hr_categories FOR ALL USING (get_user_role() IN ('Super Admin', 'HR'));
+DROP POLICY IF EXISTS "Anon Insert sapras_hr_categories" ON public.sapras_hr_categories;
+CREATE POLICY "Anon Insert sapras_hr_categories" ON public.sapras_hr_categories FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Anon Update sapras_hr_categories" ON public.sapras_hr_categories;
+CREATE POLICY "Anon Update sapras_hr_categories" ON public.sapras_hr_categories FOR UPDATE USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Anon Delete sapras_hr_categories" ON public.sapras_hr_categories;
+CREATE POLICY "Anon Delete sapras_hr_categories" ON public.sapras_hr_categories FOR DELETE USING (true);
 
 
 -- 22. Sapras HR
@@ -574,4 +579,9 @@ DROP POLICY IF EXISTS "Public read sapras_hr" ON public.sapras_hr;
 CREATE POLICY "Public read sapras_hr" ON public.sapras_hr FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Admin write sapras_hr" ON public.sapras_hr;
-CREATE POLICY "Admin write sapras_hr" ON public.sapras_hr FOR ALL USING (get_user_role() IN ('Super Admin', 'HR'));
+DROP POLICY IF EXISTS "Anon Insert sapras_hr" ON public.sapras_hr;
+CREATE POLICY "Anon Insert sapras_hr" ON public.sapras_hr FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Anon Update sapras_hr" ON public.sapras_hr;
+CREATE POLICY "Anon Update sapras_hr" ON public.sapras_hr FOR UPDATE USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Anon Delete sapras_hr" ON public.sapras_hr;
+CREATE POLICY "Anon Delete sapras_hr" ON public.sapras_hr FOR DELETE USING (true);
