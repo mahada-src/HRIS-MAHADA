@@ -149,44 +149,47 @@ export default function SaprasHr() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center bg-[#eafff5] p-6 rounded-t-xl -mx-6 -mt-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-emerald-800">Sapras HR</h1>
+      <div className="flex flex-col gap-4 bg-[#eafff5] p-6 rounded-t-xl -mx-6 -mt-6 mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-emerald-800">Sapras HR</h1>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+            {/* Filter and Search Bar integrated in header */}
+            <div className="w-full sm:w-64">
+              <input
+                type="text"
+                placeholder="Cari nama produk..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-lg border border-emerald-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all bg-white"
+              />
+            </div>
+            <div className="w-full sm:w-48">
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="w-full rounded-lg border border-emerald-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all bg-white"
+              >
+                <option value="">Semua Kategori</option>
+                {categories.map(c => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            {['Super Admin', 'HR'].includes(role) && (
+              <Button onClick={() => {
+                resetForm();
+                setShowModal(true);
+              }} className="bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm shrink-0 w-full sm:w-auto">
+                <Plus className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Tambah Produk</span>
+              </Button>
+            )}
+          </div>
         </div>
-        {['Super Admin', 'HR'].includes(role) && (
-          <Button onClick={() => {
-            resetForm();
-            setShowModal(true);
-          }} className="bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm">
-            <Plus className="w-4 h-4 mr-2" /> Tambah Produk
-          </Button>
-        )}
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 bg-white p-3 rounded-xl shadow-sm border border-slate-100">
-        <div className="flex-1">
-          <input
-            type="text"
-            placeholder="Cari nama produk..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all bg-slate-50 hover:bg-white"
-          />
-        </div>
-        <div className="sm:w-64">
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all bg-slate-50 hover:bg-white"
-          >
-            <option value="">Semua Kategori</option>
-            {categories.map(c => (
-              <option key={c.id} value={c.name}>{c.name}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+
 
       {loading ? (
         <div className="text-center py-12 text-slate-500 font-medium flex items-center justify-center">
