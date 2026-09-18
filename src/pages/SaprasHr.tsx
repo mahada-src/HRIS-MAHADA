@@ -11,6 +11,10 @@ export default function SaprasHr() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
+  // Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  
   const { employee } = useAuth();
   const role = employee?.role || 'Karyawan';
   
@@ -137,6 +141,12 @@ export default function SaprasHr() {
     }
   };
 
+  const filteredItems = items.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = filterCategory ? item.category === filterCategory : true;
+    return matchesSearch && matchesCategory;
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center bg-[#eafff5] p-6 rounded-t-xl -mx-6 -mt-6">
@@ -153,24 +163,49 @@ export default function SaprasHr() {
         )}
       </div>
 
+      {/* Filter and Search Bar */}
+      <div className="flex flex-col sm:flex-row gap-3 bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+        <div className="flex-1">
+          <input
+            type="text"
+            placeholder="Cari nama produk..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all bg-slate-50 hover:bg-white"
+          />
+        </div>
+        <div className="sm:w-64">
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all bg-slate-50 hover:bg-white"
+          >
+            <option value="">Semua Kategori</option>
+            {categories.map(c => (
+              <option key={c.id} value={c.name}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {loading ? (
         <div className="text-center py-12 text-slate-500 font-medium flex items-center justify-center">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-500 mr-2"></div>
           Memuat data...
         </div>
-      ) : items.length === 0 ? (
+      ) : filteredItems.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-slate-100 flex flex-col items-center justify-center">
           <ImageIcon className="w-12 h-12 text-slate-300 mb-4" />
           <h3 className="text-lg font-medium text-slate-800">Tidak ada produk</h3>
-          <p className="text-sm text-slate-500 mt-1">Belum ada data produk Sapras HR yang ditambahkan.</p>
+          <p className="text-sm text-slate-500 mt-1">Produk tidak ditemukan atau belum ada data yang sesuai filter.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {items.map(item => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          {filteredItems.map(item => (
             <div key={item.id} className="bg-white rounded-xl overflow-hidden shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-slate-100 hover:shadow-lg transition-all duration-200 group relative flex flex-col transform hover:-translate-y-1">
               
               {/* Image Area */}
-              <a href={item.link || '#'} target={item.link ? "_blank" : "_self"} rel="noreferrer" className="block relative aspect-square bg-[#e2e8f0] p-6 overflow-hidden">
+              <a href={item.link || '#'} target={item.link ? "_blank" : "_self"} rel="noreferrer" className="block relative aspect-square bg-[#e2e8f0] p-3 overflow-hidden">
                 {item.photo_url ? (
                   <img 
                     src={item.photo_url} 
@@ -197,7 +232,7 @@ export default function SaprasHr() {
               )}
 
               {/* Footer Area */}
-              <div className="p-4 border-t border-slate-100 mt-auto bg-white flex flex-col justify-end">
+              <div className="p-3 border-t border-slate-100 mt-auto bg-white flex flex-col justify-end">
                 <a href={item.link || '#'} target={item.link ? "_blank" : "_self"} rel="noreferrer" className="block">
                   <h3 className="font-bold text-sm text-slate-800 leading-tight mb-1.5 group-hover:text-emerald-600 line-clamp-2 transition-colors">{item.name}</h3>
                   <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{item.category || '-'}</p>
