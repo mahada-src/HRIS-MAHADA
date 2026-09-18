@@ -49,7 +49,14 @@ const navigation = [
     ],
   },
   { name: 'Pengaturan', href: '/pengaturan', icon: Settings },
-  { name: 'Administrasi', href: '/administrasi', icon: FolderOpen },
+  {
+    name: 'Administrasi',
+    icon: FolderOpen,
+    children: [
+      { name: 'Dokumen', href: '/administrasi/dokumen' },
+      { name: 'Sapras HR', href: '/administrasi/sapras-hr' },
+    ],
+  },
   {
     name: 'Inventory Asset',
     icon: Database,
@@ -122,7 +129,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
     }
   };
 
-  // Filter children for Mahada Growth based on role
+  // Filter children for Mahada Growth and Administrasi based on role
   const finalNavigation = filteredNavigation.map(item => {
     if (item.name === 'Mahada Growth' && item.children) {
       return {
@@ -133,11 +140,21 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
         })
       };
     }
+    if (item.name === 'Administrasi' && item.children) {
+      return {
+        ...item,
+        children: item.children.filter(child => {
+          if (child.name === 'Sapras HR') return role === 'Super Admin';
+          return true;
+        })
+      };
+    }
     return item;
   });
 
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     Pengajuan: location.pathname.startsWith('/pengajuan'),
+    Administrasi: location.pathname.startsWith('/administrasi'),
     'Inventory Asset': location.pathname.startsWith('/inventory'),
     'Mahada Growth': location.pathname.startsWith('/mahada-growth'),
   });

@@ -535,3 +535,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+
+-- 21. Sapras HR
+CREATE TABLE IF NOT EXISTS public.sapras_hr (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    photo_url TEXT,
+    link TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+DROP TRIGGER IF EXISTS update_sapras_hr_modtime ON public.sapras_hr;
+CREATE TRIGGER update_sapras_hr_modtime BEFORE UPDATE ON public.sapras_hr FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+
+ALTER TABLE public.sapras_hr ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public read sapras_hr" ON public.sapras_hr;
+CREATE POLICY "Public read sapras_hr" ON public.sapras_hr FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admin write sapras_hr" ON public.sapras_hr;
+CREATE POLICY "Admin write sapras_hr" ON public.sapras_hr FOR ALL USING (get_user_role() IN ('Super Admin', 'HR'));
