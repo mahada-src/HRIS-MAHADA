@@ -14,11 +14,12 @@ export default function SaprasHr() {
   const { employee } = useAuth();
   const role = employee?.role || 'Karyawan';
   
-  // Modal State
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string>('');
   const [link, setLink] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -53,12 +54,36 @@ export default function SaprasHr() {
     e.preventDefault();
     setIsSubmitting(true);
     
+    let uploadedPhotoUrl = photoUrl;
+
+    if (photoFile) {
+      const fileExt = photoFile.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `products/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('sapras')
+        .upload(filePath, photoFile);
+
+      if (uploadError) {
+        alert("Gagal mengunggah foto: " + uploadError.message);
+        setIsSubmitting(false);
+        return;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('sapras')
+        .getPublicUrl(filePath);
+
+      uploadedPhotoUrl = publicUrl;
+    }
+
     let error;
     if (editId) {
       const res = await supabase.from('sapras_hr').update({
         name,
         category,
-        photo_url: photoUrl,
+        photo_url: uploadedPhotoUrl,
         link
       }).eq('id', editId);
       error = res.error;
@@ -66,7 +91,7 @@ export default function SaprasHr() {
       const res = await supabase.from('sapras_hr').insert([{ 
         name,
         category,
-        photo_url: photoUrl,
+        photo_url: uploadedPhotoUrl,
         link
       }]);
       error = res.error;
@@ -86,6 +111,8 @@ export default function SaprasHr() {
     setName('');
     setCategory('');
     setPhotoUrl('');
+    setPhotoFile(null);
+    setPhotoPreview('');
     setLink('');
     setEditId(null);
     setShowModal(false);
@@ -96,6 +123,8 @@ export default function SaprasHr() {
     setName(item.name);
     setCategory(item.category || '');
     setPhotoUrl(item.photo_url || '');
+    setPhotoPreview(item.photo_url || '');
+    setPhotoFile(null);
     setLink(item.link || '');
     setShowModal(true);
   };
@@ -218,15 +247,30 @@ export default function SaprasHr() {
                 </div>
                 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-slate-700">Photo URL</label>
-                  <input 
-                    type="url" 
-                    value={photoUrl} 
-                    onChange={e => setPhotoUrl(e.target.value)} 
-                    placeholder="https://example.com/photo.jpg"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all"
-                  />
-                  <p className="text-[10px] text-slate-500">Kosongkan jika tidak ada foto.</p>
+                  <label className="text-sm font-semibold text-slate-700">Photo Produk</label>
+                  <div className="flex items-center gap-4">
+                    {photoPreview && (
+                      <div className="relative w-16 h-16 rounded-md overflow-hidden border border-slate-200 shrink-0">
+                        <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => { setPhotoPreview(''); setPhotoFile(null); setPhotoUrl(''); }} className="absolute top-0 right-0 bg-red-500 hover:bg-red-600 text-white p-0.5 rounded-bl-md transition-colors">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={e => {
+                        if (e.target.files && e.target.files[0]) {
+                          const file = e.target.files[0];
+                          setPhotoFile(file);
+                          setPhotoPreview(URL.createObjectURL(file));
+                        }
+                      }} 
+                      className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-500">Pilih file gambar untuk produk ini.</p>
                 </div>
 
                 <div className="space-y-1.5">

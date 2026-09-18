@@ -585,3 +585,31 @@ DROP POLICY IF EXISTS "Anon Update sapras_hr" ON public.sapras_hr;
 CREATE POLICY "Anon Update sapras_hr" ON public.sapras_hr FOR UPDATE USING (true) WITH CHECK (true);
 DROP POLICY IF EXISTS "Anon Delete sapras_hr" ON public.sapras_hr;
 CREATE POLICY "Anon Delete sapras_hr" ON public.sapras_hr FOR DELETE USING (true);
+
+
+-- 23. Buat bucket storage untuk sapras jika belum ada
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('sapras', 'sapras', true)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "Sapras Read All" ON storage.objects;
+DROP POLICY IF EXISTS "Sapras Insert All" ON storage.objects;
+DROP POLICY IF EXISTS "Sapras Update All" ON storage.objects;
+DROP POLICY IF EXISTS "Sapras Delete All" ON storage.objects;
+
+CREATE POLICY "Sapras Read All"
+ON storage.objects FOR SELECT
+USING ( bucket_id = 'sapras' );
+
+-- Mengizinkan Anon untuk kemudahan custom auth
+CREATE POLICY "Sapras Insert All"
+ON storage.objects FOR INSERT
+WITH CHECK ( bucket_id = 'sapras' );
+
+CREATE POLICY "Sapras Update All"
+ON storage.objects FOR UPDATE
+USING ( bucket_id = 'sapras' );
+
+CREATE POLICY "Sapras Delete All"
+ON storage.objects FOR DELETE
+USING ( bucket_id = 'sapras' );
