@@ -8,12 +8,13 @@ import { useAuth } from '../lib/AuthContext';
 
 export default function Pengaturan() {
   const { employee } = useAuth();
-  const [activeTab, setActiveTab] = useState<'system' | 'master' | 'kategori' | 'ikatan_dinas'>('system');
+  const [activeTab, setActiveTab] = useState<'system' | 'master' | 'kategori' | 'kategori_sapras' | 'ikatan_dinas'>('system');
 
   // Master Data State
   const [departments, setDepartments] = useState<any[]>([]);
   const [positions, setPositions] = useState<any[]>([]);
   const [docCategories, setDocCategories] = useState<any[]>([]);
+  const [saprasCategories, setSaprasCategories] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(false);
   const [newDept, setNewDept] = useState('');
@@ -21,12 +22,15 @@ export default function Pengaturan() {
   const [newPosLevel, setNewPosLevel] = useState('');
   const [selectedDeptId, setSelectedDeptId] = useState('');
   const [newCategory, setNewCategory] = useState('');
+  const [newSaprasCategory, setNewSaprasCategory] = useState('');
 
   useEffect(() => {
     if (activeTab === 'master') {
       fetchMasterData();
     } else if (activeTab === 'kategori') {
       fetchCategories();
+    } else if (activeTab === 'kategori_sapras') {
+      fetchSaprasCategories();
     }
   }, [activeTab]);
 
@@ -46,6 +50,13 @@ export default function Pengaturan() {
     setLoading(true);
     const { data } = await supabase.from('document_categories').select('*').order('name');
     if (data) setDocCategories(data);
+    setLoading(false);
+  };
+
+  const fetchSaprasCategories = async () => {
+    setLoading(true);
+    const { data } = await supabase.from('sapras_hr_categories').select('*').order('name');
+    if (data) setSaprasCategories(data);
     setLoading(false);
   };
 
@@ -92,11 +103,25 @@ export default function Pengaturan() {
     }
   };
 
+  const handleAddSaprasCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { error } = await supabase.from('sapras_hr_categories').insert([{ 
+      name: newSaprasCategory
+    }]);
+    if (!error) {
+      setNewSaprasCategory('');
+      fetchSaprasCategories();
+    } else {
+      alert("Gagal menambahkan kategori sapras: " + error.message);
+    }
+  };
+
   const handleDelete = async (table: string, id: string) => {
     if (window.confirm('Yakin ingin menghapus?')) {
       const { error } = await supabase.from(table).delete().eq('id', id);
       if (!error) {
         if (table === 'document_categories') fetchCategories();
+        else if (table === 'sapras_hr_categories') fetchSaprasCategories();
         else fetchMasterData();
       } else {
         alert("Gagal menghapus data: " + error.message);
@@ -137,8 +162,16 @@ export default function Pengaturan() {
           Kategori Administrasi
         </button>
         <button
+          onClick={() => setActiveTab('kategori_sapras')}
+          className={`flex items-center justify-center w-1/5 rounded-lg py-2.5 text-sm font-medium leading-5 transition-all
+            ${activeTab === 'kategori_sapras' ? 'bg-white text-emerald-700 shadow' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
+        >
+          <FolderKey className="w-4 h-4 mr-2" />
+          Kategori Sapras HR
+        </button>
+        <button
           onClick={() => setActiveTab('ikatan_dinas')}
-          className={`flex items-center justify-center w-1/4 rounded-lg py-2.5 text-sm font-medium leading-5 transition-all
+          className={`flex items-center justify-center w-1/5 rounded-lg py-2.5 text-sm font-medium leading-5 transition-all
             ${activeTab === 'ikatan_dinas' ? 'bg-white text-emerald-700 shadow' : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800'}`}
         >
           <LinkIcon className="w-4 h-4 mr-2" />
@@ -331,6 +364,50 @@ export default function Pengaturan() {
                     <TableCell className="font-medium text-slate-700">{c.name}</TableCell>
                     <TableCell className="text-right">
                       <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDelete('document_categories', c.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === 'kategori_sapras' && (
+        <Card className="max-w-2xl">
+          <CardHeader>
+            <CardTitle>Kategori Sapras HR</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAddSaprasCategory} className="flex gap-2 mb-4">
+              <input 
+                required 
+                value={newSaprasCategory} 
+                onChange={e => setNewSaprasCategory(e.target.value)} 
+                placeholder="Nama Kategori Baru (mis. Atribut, Seragam)" 
+                className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none" 
+              />
+              <Button type="submit"><Plus className="w-4 h-4" /></Button>
+            </form>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nama Kategori</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow><TableCell colSpan={2} className="text-center py-4 text-slate-500">Memuat...</TableCell></TableRow>
+                ) : saprasCategories.length === 0 ? (
+                  <TableRow><TableCell colSpan={2} className="text-center py-4 text-slate-500">Belum ada kategori.</TableCell></TableRow>
+                ) : saprasCategories.map(c => (
+                  <TableRow key={c.id}>
+                    <TableCell className="font-medium text-slate-700">{c.name}</TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDelete('sapras_hr_categories', c.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </TableCell>

@@ -536,10 +536,29 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 
--- 21. Sapras HR
+-- 21. Sapras HR Categories
+CREATE TABLE IF NOT EXISTS public.sapras_hr_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+DROP TRIGGER IF EXISTS update_sapras_hr_categories_modtime ON public.sapras_hr_categories;
+CREATE TRIGGER update_sapras_hr_categories_modtime BEFORE UPDATE ON public.sapras_hr_categories FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+
+ALTER TABLE public.sapras_hr_categories ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public read sapras_hr_categories" ON public.sapras_hr_categories;
+CREATE POLICY "Public read sapras_hr_categories" ON public.sapras_hr_categories FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admin write sapras_hr_categories" ON public.sapras_hr_categories;
+CREATE POLICY "Admin write sapras_hr_categories" ON public.sapras_hr_categories FOR ALL USING (get_user_role() IN ('Super Admin', 'HR'));
+
+
+-- 22. Sapras HR
 CREATE TABLE IF NOT EXISTS public.sapras_hr (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
+    category VARCHAR(255),
     photo_url TEXT,
     link TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,

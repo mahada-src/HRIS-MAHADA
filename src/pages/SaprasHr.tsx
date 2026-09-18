@@ -8,6 +8,7 @@ import { useAuth } from '../lib/AuthContext';
 
 export default function SaprasHr() {
   const [items, setItems] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const { employee } = useAuth();
@@ -16,6 +17,7 @@ export default function SaprasHr() {
   // Modal State
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
+  const [category, setCategory] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
   const [link, setLink] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,15 +30,22 @@ export default function SaprasHr() {
   const fetchData = async () => {
     setLoading(true);
     // Kita gunakan fallback ke array kosong jika tabel belum ada untuk mencegah aplikasi crash
-    const { data, error } = await supabase.from('sapras_hr').select('*').order('created_at', { ascending: false });
+    const [itemsRes, categoriesRes] = await Promise.all([
+      supabase.from('sapras_hr').select('*').order('created_at', { ascending: false }),
+      supabase.from('sapras_hr_categories').select('*').order('name')
+    ]);
     
-    if (data) {
-      setItems(data);
-    } else if (error) {
-      console.error('Error fetching sapras_hr:', error);
-      // Jika tabel belum ada, biarkan kosong
+    if (itemsRes.data) {
+      setItems(itemsRes.data);
+    } else if (itemsRes.error) {
+      console.error('Error fetching sapras_hr:', itemsRes.error);
       setItems([]);
     }
+
+    if (categoriesRes.data) {
+      setCategories(categoriesRes.data);
+    }
+    
     setLoading(false);
   };
 
@@ -48,6 +57,7 @@ export default function SaprasHr() {
     if (editId) {
       const res = await supabase.from('sapras_hr').update({
         name,
+        category,
         photo_url: photoUrl,
         link
       }).eq('id', editId);
@@ -55,6 +65,7 @@ export default function SaprasHr() {
     } else {
       const res = await supabase.from('sapras_hr').insert([{ 
         name,
+        category,
         photo_url: photoUrl,
         link
       }]);
@@ -73,6 +84,7 @@ export default function SaprasHr() {
 
   const resetForm = () => {
     setName('');
+    setCategory('');
     setPhotoUrl('');
     setLink('');
     setEditId(null);
@@ -82,6 +94,7 @@ export default function SaprasHr() {
   const openEditModal = (item: any) => {
     setEditId(item.id);
     setName(item.name);
+    setCategory(item.category || '');
     setPhotoUrl(item.photo_url || '');
     setLink(item.link || '');
     setShowModal(true);
@@ -111,76 +124,60 @@ export default function SaprasHr() {
         )}
       </div>
 
-      <Card className="border-0 shadow-sm mt-0 rounded-t-none">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-[#cbf5e6]">
-              <TableRow className="border-b-0 hover:bg-[#cbf5e6]">
-                <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4 w-24 text-center">PHOTO</TableHead>
-                <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">NAMA PRODUK</TableHead>
-                <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4">LINK</TableHead>
-                {['Super Admin', 'HR'].includes(role) && <TableHead className="font-bold text-emerald-800 uppercase text-xs py-4 text-center w-24">AKSI</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody className="divide-y divide-slate-100">
-              {loading ? (
-                <TableRow><TableCell colSpan={['Super Admin', 'HR'].includes(role) ? 4 : 3} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
-              ) : items.length === 0 ? (
-                <TableRow><TableCell colSpan={['Super Admin', 'HR'].includes(role) ? 4 : 3} className="text-center py-8 text-slate-500">Tidak ada data produk Sapras HR.</TableCell></TableRow>
-              ) : items.map(item => (
-                <TableRow key={item.id} className="hover:bg-slate-50">
-                  <TableCell className="text-center">
-                    <div className="flex items-center justify-center">
-                      {item.photo_url ? (
-                        <img 
-                          src={item.photo_url} 
-                          alt={item.name} 
-                          className="w-12 h-12 object-cover rounded-md shadow-sm border border-slate-200"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg font-bold shadow-sm border border-emerald-200">
-                          {item.name ? item.name.charAt(0).toUpperCase() : '?'}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium text-slate-800">
-                    {item.link ? (
-                      <a href={item.link} target="_blank" rel="noreferrer" className="hover:text-emerald-600 hover:underline transition-colors">
-                        {item.name}
-                      </a>
-                    ) : (
-                      item.name
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {item.link ? (
-                      <a href={item.link} target="_blank" rel="noreferrer" className="inline-flex items-center text-emerald-600 hover:text-emerald-700 text-sm font-medium">
-                        <ExternalLink className="w-3.5 h-3.5 mr-1" />
-                        Buka Link
-                      </a>
-                    ) : (
-                      <span className="text-slate-400 text-sm">-</span>
-                    )}
-                  </TableCell>
-                  {['Super Admin', 'HR'].includes(role) && (
-                    <TableCell className="text-center">
-                      <div className="flex justify-center gap-2">
-                        <Button size="sm" variant="outline" className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 p-2 h-auto" onClick={() => openEditModal(item)}>
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" variant="outline" className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 p-2 h-auto" onClick={() => handleDelete(item.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {loading ? (
+        <div className="text-center py-12 text-slate-500 font-medium flex items-center justify-center">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-500 mr-2"></div>
+          Memuat data...
+        </div>
+      ) : items.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-slate-100 flex flex-col items-center justify-center">
+          <ImageIcon className="w-12 h-12 text-slate-300 mb-4" />
+          <h3 className="text-lg font-medium text-slate-800">Tidak ada produk</h3>
+          <p className="text-sm text-slate-500 mt-1">Belum ada data produk Sapras HR yang ditambahkan.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {items.map(item => (
+            <div key={item.id} className="bg-white rounded-xl overflow-hidden shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-slate-100 hover:shadow-lg transition-all duration-200 group relative flex flex-col transform hover:-translate-y-1">
+              
+              {/* Image Area */}
+              <a href={item.link || '#'} target={item.link ? "_blank" : "_self"} rel="noreferrer" className="block relative aspect-square bg-[#e2e8f0] p-6 overflow-hidden">
+                {item.photo_url ? (
+                  <img 
+                    src={item.photo_url} 
+                    alt={item.name} 
+                    className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-slate-400/50 group-hover:scale-110 transition-transform duration-300">
+                    {item.name ? item.name.charAt(0).toUpperCase() : '?'}
+                  </div>
+                )}
+              </a>
+
+              {/* Action overlay on hover */}
+              {['Super Admin', 'HR'].includes(role) && (
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  <button onClick={(e) => { e.preventDefault(); openEditModal(item); }} className="p-1.5 bg-white/90 backdrop-blur-sm hover:bg-emerald-50 text-emerald-600 rounded-md shadow-sm transition-colors border border-slate-200/50">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={(e) => { e.preventDefault(); handleDelete(item.id); }} className="p-1.5 bg-white/90 backdrop-blur-sm hover:bg-red-50 text-red-600 rounded-md shadow-sm transition-colors border border-slate-200/50">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Footer Area */}
+              <div className="p-4 border-t border-slate-100 mt-auto bg-white flex flex-col justify-end">
+                <a href={item.link || '#'} target={item.link ? "_blank" : "_self"} rel="noreferrer" className="block">
+                  <h3 className="font-bold text-sm text-slate-800 leading-tight mb-1.5 group-hover:text-emerald-600 line-clamp-2 transition-colors">{item.name}</h3>
+                  <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{item.category || '-'}</p>
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Modal Form */}
       {showModal && (
@@ -204,6 +201,20 @@ export default function SaprasHr() {
                     placeholder="Contoh: Laptop Dell"
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all"
                   />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-slate-700">Kategori</label>
+                  <select 
+                    value={category} 
+                    onChange={e => setCategory(e.target.value)} 
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all bg-white"
+                  >
+                    <option value="">-- Pilih Kategori --</option>
+                    {categories.map(c => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
                 </div>
                 
                 <div className="space-y-1.5">
