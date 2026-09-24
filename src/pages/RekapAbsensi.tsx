@@ -217,6 +217,51 @@ export default function RekapAbsensi() {
 
   const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
+  const handleDownload = () => {
+    const headers = [
+      'Karyawan', 
+      'NIK',
+      'Periode', 
+      'Jml Hari Kerja', 
+      'Hadir', 
+      'Telat', 
+      'WFH', 
+      'Sakit', 
+      'Izin Full', 
+      'Izin 1/2', 
+      'Izin 1/3', 
+      'Cuti'
+    ];
+    
+    const periodeStr = `21 ${monthNames[parseInt(month) === 1 ? 11 : parseInt(month)-2]} - 20 ${monthNames[parseInt(month)-1]}`;
+
+    const csvData = summaryData.map(row => [
+      `"${row.full_name || 'Unknown'}"`,
+      `"${row.employee_code}"`,
+      `"${periodeStr}"`,
+      row.jmlHariKerja,
+      row.hadir,
+      row.telat,
+      row.wfh,
+      row.sakit,
+      row.izin,
+      row.izinSetengah,
+      row.izinSepertiga,
+      row.cuti
+    ]);
+
+    const csvContent = [headers.join(','), ...csvData.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    link.download = `Rekap_Absensi_${monthNames[parseInt(month)-1]}_${year}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="flex flex-col h-full space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -227,7 +272,7 @@ export default function RekapAbsensi() {
           <Button variant="outline" size="sm" className="bg-white border-slate-200 text-slate-700">
             Total Semua Akumulasi
           </Button>
-          <Button variant="outline" size="sm" className="bg-white border-slate-200 text-slate-700">
+          <Button variant="outline" size="sm" className="bg-white border-slate-200 text-slate-700" onClick={handleDownload}>
             <Download className="mr-2 h-4 w-4 text-emerald-600" />
             Download
           </Button>
