@@ -26,7 +26,9 @@ export default function PengajuanLembur() {
   // Filters
   const [filterMonth, setFilterMonth] = useState((new Date().getMonth() + 1).toString().padStart(2, '0'));
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
+  const [filterDepartmentId, setFilterDepartmentId] = useState('');
   const [filterEmployeeId, setFilterEmployeeId] = useState('');
+  const [departments, setDepartments] = useState<any[]>([]);
   
   // Form State
   const [employeeId, setEmployeeId] = useState('');
@@ -57,7 +59,17 @@ export default function PengajuanLembur() {
   useEffect(() => {
     fetchData();
     fetchEmployees();
-  }, []);
+    fetchDepartments();
+  }, [currentEmployee]);
+
+  const fetchDepartments = async () => {
+    let query = supabase.from('departments').select('id, name').order('name');
+    if (isManager && currentEmployee?.department_id) {
+      query = query.eq('id', currentEmployee.department_id);
+    }
+    const { data } = await query;
+    if (data) setDepartments(data);
+  };
 
   const fetchEmployees = async () => {
     let query = supabase.from('employees').select('id, full_name, employee_code, department_id, employment_status').neq('status_karyawan', 'Resign').neq('status_karyawan', 'PHK').neq('status_karyawan', 'Inactive').order('full_name');
@@ -178,6 +190,7 @@ export default function PengajuanLembur() {
   const endDate = new Date(selectedYear, selectedMonth - 1, 20, 23, 59, 59);
 
   const filteredData = data.filter(item => {
+    const matchDept = !filterDepartmentId || item.employees?.department_id === filterDepartmentId;
     const matchEmployee = filterEmployeeId === '' || item.employee_id === filterEmployeeId;
     
     // Safely parse date to avoid timezone offset issues
@@ -186,7 +199,7 @@ export default function PengajuanLembur() {
     
     const isWithinRange = itemDate >= startDate && itemDate <= endDate;
     
-    return matchEmployee && isWithinRange;
+    return matchDept && matchEmployee && isWithinRange;
   }).sort((a, b) => {
     const dateA = new Date(a.date || a.start_date || 0).getTime();
     const dateB = new Date(b.date || b.start_date || 0).getTime();
@@ -198,11 +211,12 @@ export default function PengajuanLembur() {
   const totalMenitEfektif = filteredData.reduce((total, item) => total + (item.menit_efektif || 0), 0);
 
   const handleDownload = () => {
-    const headers = ['No. Ref', 'NIK', 'Nama Karyawan', 'Tanggal', 'Jam Mulai', 'Jam Selesai', 'Durasi (Menit)', 'Target Pekerjaan', 'Menit Efektif', 'Status'];
+    const headers = ['No. Ref', 'NIK', 'Nama Karyawan', 'Divisi', 'Tanggal', 'Jam Mulai', 'Jam Selesai', 'Durasi (Menit)', 'Target Pekerjaan', 'Menit Efektif', 'Status'];
     const csvData = filteredData.map(item => [
       `REQ-${item.id.substring(0, 6).toUpperCase()}`,
       item.employees?.employee_code || '',
       `"${item.employees?.full_name || ''}"`,
+      `"${departments.find(d => d.id === item.employees?.department_id)?.name || ''}"`,
       new Date(item.date).toLocaleDateString('id-ID'),
       item.start_time,
       item.end_time,
@@ -223,6 +237,9 @@ export default function PengajuanLembur() {
     if (filterEmployeeId) {
        const emp = employees.find(e => e.id === filterEmployeeId);
        if (emp) empName = emp.full_name;
+    } else if (filterDepartmentId) {
+       const dept = departments.find(d => d.id === filterDepartmentId);
+       if (dept) empName = `Divisi ${dept.name}`;
     }
     link.download = `Rekapan Lembur - ${empName} - ${monthName} ${filterYear}.csv`;
     document.body.appendChild(link);
@@ -273,7 +290,7 @@ export default function PengajuanLembur() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-between bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-2">
           <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white">
             {Array.from({ length: 12 }, (_, i) => {
               const month = (i + 1).toString().padStart(2, '0');
@@ -286,11 +303,37 @@ export default function PengajuanLembur() {
               return <option key={year} value={year}>{year}</option>;
             })}
           </select>
-          <select value={filterEmployeeId} onChange={(e) => setFilterEmployeeId(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white min-w-[200px]">
-            <option value="">Semua Karyawan</option>
-            {employees.filter(emp => emp.employment_status !== 'Resign').map(emp => (
-              <option key={emp.id} value={emp.id}>{emp.full_name}</option>
+          <select 
+            value={filterDepartmentId} 
+            onChange={(e) => {
+              const newDeptId = e.target.value;
+              setFilterDepartmentId(newDeptId);
+              if (newDeptId && filterEmployeeId) {
+                const currentEmp = employees.find(emp => emp.id === filterEmployeeId);
+                if (currentEmp && currentEmp.department_id !== newDeptId) {
+                  setFilterEmployeeId('');
+                }
+              }
+            }} 
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white min-w-[160px]"
+          >
+            <option value="">Semua Divisi</option>
+            {departments.map(dept => (
+              <option key={dept.id} value={dept.id}>{dept.name}</option>
             ))}
+          </select>
+          <select 
+            value={filterEmployeeId} 
+            onChange={(e) => setFilterEmployeeId(e.target.value)} 
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white min-w-[200px]"
+          >
+            <option value="">Semua Karyawan</option>
+            {employees
+              .filter(emp => emp.employment_status !== 'Resign')
+              .filter(emp => !filterDepartmentId || emp.department_id === filterDepartmentId)
+              .map(emp => (
+                <option key={emp.id} value={emp.id}>{emp.full_name}</option>
+              ))}
           </select>
         </div>
         <div className="flex items-center gap-3">
@@ -379,16 +422,21 @@ export default function PengajuanLembur() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
               ) : filteredData.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-8 text-slate-500">Belum ada pengajuan.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center py-8 text-slate-500">Belum ada pengajuan.</TableCell></TableRow>
               ) : (
                 filteredData.map(item => (
                   <TableRow key={item.id}>
                     <TableCell className="font-mono text-xs">REQ-{item.id.substring(0,6).toUpperCase()}</TableCell>
                     <TableCell>
                       <div className="font-medium text-slate-800">{item.employees?.full_name}</div>
-                      <div className="text-xs text-slate-500">{item.employees?.employee_code}</div>
+                      <div className="text-xs text-slate-500">
+                        {item.employees?.employee_code}
+                        {departments.find(d => d.id === item.employees?.department_id)?.name && (
+                          <span className="ml-1 text-slate-400">· {departments.find(d => d.id === item.employees?.department_id)?.name}</span>
+                        )}
+                      </div>
                     </TableCell>
                     
                     <TableCell>
