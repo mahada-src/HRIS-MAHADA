@@ -160,6 +160,8 @@ CREATE TABLE IF NOT EXISTS public.business_trip_bonds (
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     status VARCHAR(50) DEFAULT 'Active',
+    nominal NUMERIC DEFAULT 0,
+    nominal_masa_ikatan_dinas NUMERIC DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );

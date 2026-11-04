@@ -181,8 +181,30 @@ export default function IkatanDinas() {
     });
 
     const today = new Date();
+    const oneDayMs = 1000 * 60 * 60 * 24;
+
     results.forEach(c => {
       c.isActive = c.bondEndDate > today;
+
+      // Hitung sisa waktu dan penyusutan nominal masa ikatan dinas berkurang otomatis ke 0
+      const totalDuration = c.bondEndDate.getTime() - c.startDate.getTime();
+      const remainingDuration = c.bondEndDate.getTime() - today.getTime();
+
+      const totalDays = Math.max(1, Math.round(totalDuration / oneDayMs));
+      const remainingDays = Math.max(0, Math.ceil(remainingDuration / oneDayMs));
+
+      let remainingNominal = 0;
+      if (today.getTime() <= c.startDate.getTime()) {
+        remainingNominal = c.totalNominal;
+      } else if (today.getTime() >= c.bondEndDate.getTime()) {
+        remainingNominal = 0;
+      } else if (totalDuration > 0) {
+        remainingNominal = Math.round((remainingDuration / totalDuration) * c.totalNominal);
+      }
+
+      c.remainingNominal = remainingNominal;
+      c.remainingDays = remainingDays;
+      c.totalDays = totalDays;
     });
 
     return results.sort((a, b) => b.bondEndDate.getTime() - a.bondEndDate.getTime());
@@ -314,12 +336,13 @@ export default function IkatanDinas() {
                 <tr>
                   <th className="px-4 py-3">NAMA KARYAWAN</th>
                   <th className="px-4 py-3 text-right">TOTAL BIAYA</th>
+                  <th className="px-4 py-3 text-right">NOMINAL MASA IKATAN DINAS</th>
                   <th className="px-4 py-3">MASA BERAKHIR IKATAN</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {clusteredBonds.filter(c => filterEmployee === 'Semua Karyawan' || c.employee?.full_name === filterEmployee).length === 0 ? (
-                  <tr><td colSpan={3} className="text-center py-8 text-slate-500">Tidak ada ikatan dinas aktif/riwayat.</td></tr>
+                  <tr><td colSpan={4} className="text-center py-8 text-slate-500">Tidak ada ikatan dinas aktif/riwayat.</td></tr>
                 ) : (
                   clusteredBonds
                   .filter(c => filterEmployee === 'Semua Karyawan' || c.employee?.full_name === filterEmployee)
@@ -334,6 +357,20 @@ export default function IkatanDinas() {
                       </td>
                       <td className="px-4 py-4 text-right font-bold text-slate-800">
                         Rp {cluster.totalNominal.toLocaleString('id-ID')}
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <div className="font-bold text-emerald-700">
+                          Rp {cluster.remainingNominal.toLocaleString('id-ID')}
+                        </div>
+                        {cluster.isActive ? (
+                          <div className="text-[10px] text-slate-500 font-normal">
+                            Sisa {cluster.remainingDays} hari ({Math.round((cluster.remainingNominal / (cluster.totalNominal || 1)) * 100)}%)
+                          </div>
+                        ) : (
+                          <div className="text-[10px] text-slate-400 font-normal">
+                            Lunas (0%)
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-4">
                         <div className={`font-semibold ${cluster.isActive ? 'text-red-500' : 'text-slate-500'}`}>

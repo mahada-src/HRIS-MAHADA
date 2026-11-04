@@ -487,6 +487,13 @@ export default function Pengaturan() {
                   Jika karyawan mengikuti perjalanan dinas/pendidikan yang baru setelah melewati batas <strong>6 bulan</strong> dari pendidikan pertama sebelumnya, maka biaya tidak akan diakumulasikan. Kegiatan ini akan membentuk <strong>Periode Ikatan Dinas Baru</strong> yang memiliki perhitungan nominal dan masa berlakunya sendiri secara terpisah dari periode sebelumnya.
                 </p>
               </div>
+
+              <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
+                <h3 className="font-semibold text-emerald-800 mb-2">4. Pengurangan Nominal Masa Ikatan Dinas</h3>
+                <p className="text-emerald-900/80 leading-relaxed">
+                  Total biaya ikatan dinas pada setiap periode akan berkurang secara otomatis setiap hari (prorata waktu harian) mulai dari tanggal awal periode ikatan dinas hingga mencapai <strong>Rp 0 (nol)</strong> tepat pada tanggal masa berakhir ikatan dinas.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
