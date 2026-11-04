@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { supabase } from '../lib/supabase';
 import { Employee } from '../types';
-import { Plus, X, Link as LinkIcon, Car } from 'lucide-react';
+import { Plus, X, Link as LinkIcon, Car, Info } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 
 export default function IkatanDinas() {
@@ -218,11 +219,22 @@ export default function IkatanDinas() {
         <div>
           <h1 className="text-xl font-bold tracking-tight text-emerald-800">Ikatan & Perjalanan Dinas</h1>
         </div>
-        {!isManagerOrKaryawan && (
-          <Button onClick={() => setShowForm(!showForm)} className="bg-emerald-700 hover:bg-emerald-800 text-white">
-            {showForm ? <><X className="w-4 h-4 mr-2" /> Batal</> : <><Plus className="w-4 h-4 mr-2" /> Tambah Perjalanan</>}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {!isManagerOrKaryawan && (
+            <Link
+              to="/pengaturan?tab=ikatan_dinas"
+              className="inline-flex items-center text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-2 rounded-lg transition-colors"
+            >
+              <Info className="w-4 h-4 mr-1.5 text-emerald-600" />
+              Aturan Ikatan Dinas
+            </Link>
+          )}
+          {!isManagerOrKaryawan && (
+            <Button onClick={() => setShowForm(!showForm)} className="bg-emerald-700 hover:bg-emerald-800 text-white">
+              {showForm ? <><X className="w-4 h-4 mr-2" /> Batal</> : <><Plus className="w-4 h-4 mr-2" /> Tambah Perjalanan</>}
+            </Button>
+          )}
+        </div>
       </div>
 
       {showForm && (

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
@@ -8,7 +9,17 @@ import { useAuth } from '../lib/AuthContext';
 
 export default function Pengaturan() {
   const { employee } = useAuth();
-  const [activeTab, setActiveTab] = useState<'system' | 'master' | 'kategori' | 'kategori_sapras' | 'ikatan_dinas'>('system');
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as any;
+  const [activeTab, setActiveTab] = useState<'system' | 'master' | 'kategori' | 'kategori_sapras' | 'ikatan_dinas'>(
+    ['system', 'master', 'kategori', 'kategori_sapras', 'ikatan_dinas'].includes(tabParam) ? tabParam : 'system'
+  );
+
+  useEffect(() => {
+    if (tabParam && ['system', 'master', 'kategori', 'kategori_sapras', 'ikatan_dinas'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   // Master Data State
   const [departments, setDepartments] = useState<any[]>([]);
@@ -489,10 +500,36 @@ export default function Pengaturan() {
               </div>
 
               <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
-                <h3 className="font-semibold text-emerald-800 mb-2">4. Pengurangan Nominal Masa Ikatan Dinas</h3>
-                <p className="text-emerald-900/80 leading-relaxed">
-                  Total biaya ikatan dinas pada setiap periode akan berkurang secara otomatis setiap hari (prorata waktu harian) mulai dari tanggal awal periode ikatan dinas hingga mencapai <strong>Rp 0 (nol)</strong> tepat pada tanggal masa berakhir ikatan dinas.
+                <h3 className="font-semibold text-emerald-800 mb-2">4. Ketentuan Pengurangan Nominal Masa Ikatan Dinas</h3>
+                <p className="text-emerald-900/90 leading-relaxed mb-3">
+                  Nominal Masa Ikatan Dinas mencerminkan sisa nilai kewajiban / investasi biaya perjalanan dinas atau pendidikan yang sedang aktif dijalani. Nilai ini berkurang secara otomatis setiap hari (prorata harian) hingga mencapai <strong>Rp 0 (nol)</strong> pada tanggal masa berakhir ikatan dinas.
                 </p>
+
+                <div className="bg-white p-3.5 rounded-lg border border-emerald-100 mb-3 space-y-2 text-xs">
+                  <div className="font-semibold text-emerald-900">Mekanisme & Rumus Perhitungan:</div>
+                  <ul className="list-disc list-inside space-y-2 text-slate-700">
+                    <li>
+                      <strong>Titik Awal (Start Date):</strong> Perhitungan penyusutan dimulai dari <strong>tanggal awal periode ikatan dinas</strong> (yaitu tanggal perjalanan pertama dalam klaster periode tersebut, contoh: 12 Februari).
+                    </li>
+                    <li>
+                      <strong>Penyusutan Otomatis Harian:</strong> Setiap pergantian hari, sisa nominal berkurang secara proporsional sesuai perbandingan sisa hari terhadap total durasi hari ikatan dinas:
+                      <div className="my-2 p-2.5 bg-slate-50 rounded border border-slate-200 font-mono text-[11px] text-slate-800">
+                        Nominal Masa Ikatan Dinas = Total Biaya × (Sisa Hari / Total Hari Periode)
+                      </div>
+                    </li>
+                    <li>
+                      <strong>Titik Akhir (End Date):</strong> Tepat pada tanggal masa berakhir ikatan dinas, nominal otomatis bernilai <strong>Rp 0 (Lunas / Selesai)</strong>.
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-emerald-100/70 p-3 rounded-lg border border-emerald-200 text-xs text-emerald-950">
+                  <span className="font-semibold">Simulasi Contoh:</span>
+                  <p className="mt-1 leading-relaxed">
+                    Karyawan memiliki perjalanan dinas pertama pada <strong>12 Februari 2026</strong> dengan total biaya akumulasi <strong>Rp 9.482.700</strong> (durasi 24 bulan, masa berakhir <strong>12 Februari 2028</strong> = 730 hari).
+                    Nominal berkurang otomatis sebesar ±<strong>Rp 12.990</strong> per hari, dan akan tepat bernilai <strong>Rp 0</strong> pada 12 Februari 2028.
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>
