@@ -28,6 +28,7 @@ export default function PengajuanLembur() {
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
   const [filterDepartmentId, setFilterDepartmentId] = useState('');
   const [filterEmployeeId, setFilterEmployeeId] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
   const [departments, setDepartments] = useState<any[]>([]);
   
   // Form State
@@ -189,7 +190,7 @@ export default function PengajuanLembur() {
   const startDate = new Date(startYear, startMonth - 1, 21);
   const endDate = new Date(selectedYear, selectedMonth - 1, 20, 23, 59, 59);
 
-  const filteredData = data.filter(item => {
+  const baseFilteredData = data.filter(item => {
     const matchDept = !filterDepartmentId || item.employees?.department_id === filterDepartmentId;
     const matchEmployee = filterEmployeeId === '' || item.employee_id === filterEmployeeId;
     
@@ -200,6 +201,14 @@ export default function PengajuanLembur() {
     const isWithinRange = itemDate >= startDate && itemDate <= endDate;
     
     return matchDept && matchEmployee && isWithinRange;
+  });
+
+  const countDisetujui = baseFilteredData.filter(i => i.status === 'Disetujui').length;
+  const countMenunggu = baseFilteredData.filter(i => i.status === 'Menunggu Persetujuan').length;
+  const countDitolak = baseFilteredData.filter(i => i.status === 'Ditolak').length;
+
+  const filteredData = baseFilteredData.filter(item => {
+    return !filterStatus || item.status === filterStatus;
   }).sort((a, b) => {
     const dateA = new Date(a.date || a.start_date || 0).getTime();
     const dateB = new Date(b.date || b.start_date || 0).getTime();
@@ -241,7 +250,8 @@ export default function PengajuanLembur() {
        const dept = departments.find(d => d.id === filterDepartmentId);
        if (dept) empName = `Divisi ${dept.name}`;
     }
-    link.download = `Rekapan Lembur - ${empName} - ${monthName} ${filterYear}.csv`;
+    const statusLabel = filterStatus ? ` - ${filterStatus}` : '';
+    link.download = `Rekapan Lembur - ${empName}${statusLabel} - ${monthName} ${filterYear}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -289,61 +299,140 @@ export default function PengajuanLembur() {
         </Card>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 justify-between bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-        <div className="flex flex-col sm:flex-row flex-wrap gap-2">
-          <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white">
-            {Array.from({ length: 12 }, (_, i) => {
-              const month = (i + 1).toString().padStart(2, '0');
-              return <option key={month} value={month}>{new Date(0, i).toLocaleString('id-ID', { month: 'long' })}</option>;
-            })}
-          </select>
-          <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white">
-            {Array.from({ length: 5 }, (_, i) => {
-              const year = (new Date().getFullYear() - i).toString();
-              return <option key={year} value={year}>{year}</option>;
-            })}
-          </select>
-          <select 
-            value={filterDepartmentId} 
-            onChange={(e) => {
-              const newDeptId = e.target.value;
-              setFilterDepartmentId(newDeptId);
-              if (newDeptId && filterEmployeeId) {
-                const currentEmp = employees.find(emp => emp.id === filterEmployeeId);
-                if (currentEmp && currentEmp.department_id !== newDeptId) {
-                  setFilterEmployeeId('');
+      <div className="space-y-3 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+            <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white">
+              {Array.from({ length: 12 }, (_, i) => {
+                const month = (i + 1).toString().padStart(2, '0');
+                return <option key={month} value={month}>{new Date(0, i).toLocaleString('id-ID', { month: 'long' })}</option>;
+              })}
+            </select>
+            <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white">
+              {Array.from({ length: 5 }, (_, i) => {
+                const year = (new Date().getFullYear() - i).toString();
+                return <option key={year} value={year}>{year}</option>;
+              })}
+            </select>
+            <select 
+              value={filterDepartmentId} 
+              onChange={(e) => {
+                const newDeptId = e.target.value;
+                setFilterDepartmentId(newDeptId);
+                if (newDeptId && filterEmployeeId) {
+                  const currentEmp = employees.find(emp => emp.id === filterEmployeeId);
+                  if (currentEmp && currentEmp.department_id !== newDeptId) {
+                    setFilterEmployeeId('');
+                  }
                 }
-              }
-            }} 
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white min-w-[160px]"
-          >
-            <option value="">Semua Divisi</option>
-            {departments.map(dept => (
-              <option key={dept.id} value={dept.id}>{dept.name}</option>
-            ))}
-          </select>
-          <select 
-            value={filterEmployeeId} 
-            onChange={(e) => setFilterEmployeeId(e.target.value)} 
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white min-w-[200px]"
-          >
-            <option value="">Semua Karyawan</option>
-            {employees
-              .filter(emp => emp.employment_status !== 'Resign')
-              .filter(emp => !filterDepartmentId || emp.department_id === filterDepartmentId)
-              .map(emp => (
-                <option key={emp.id} value={emp.id}>{emp.full_name}</option>
+              }} 
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white min-w-[160px]"
+            >
+              <option value="">Semua Divisi</option>
+              {departments.map(dept => (
+                <option key={dept.id} value={dept.id}>{dept.name}</option>
               ))}
-          </select>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" className="text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={handleDownload}>
-            <Download className="w-4 h-4 mr-2" />
-            Download Rekapan
-          </Button>
-          <div className="bg-emerald-50 text-emerald-800 px-4 py-2 rounded-lg font-semibold text-sm flex items-center border border-emerald-100">
-            Total Pengajuan: {filteredData.length}
+            </select>
+            <select 
+              value={filterEmployeeId} 
+              onChange={(e) => setFilterEmployeeId(e.target.value)} 
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white min-w-[200px]"
+            >
+              <option value="">Semua Karyawan</option>
+              {employees
+                .filter(emp => emp.employment_status !== 'Resign')
+                .filter(emp => !filterDepartmentId || emp.department_id === filterDepartmentId)
+                .map(emp => (
+                  <option key={emp.id} value={emp.id}>{emp.full_name}</option>
+                ))}
+            </select>
+            <select 
+              value={filterStatus} 
+              onChange={(e) => setFilterStatus(e.target.value)} 
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white min-w-[190px]"
+            >
+              <option value="">Semua Status ({baseFilteredData.length})</option>
+              <option value="Menunggu Persetujuan">Menunggu Persetujuan ({countMenunggu})</option>
+              <option value="Disetujui">Disetujui ({countDisetujui})</option>
+              <option value="Ditolak">Ditolak ({countDitolak})</option>
+            </select>
           </div>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" className="text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={handleDownload}>
+              <Download className="w-4 h-4 mr-2" />
+              Download Rekapan
+            </Button>
+            <div className="bg-emerald-50 text-emerald-800 px-4 py-2 rounded-lg font-semibold text-sm flex items-center border border-emerald-100">
+              Total Pengajuan: {filteredData.length}
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Filter Status Pills */}
+        <div className="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap">
+          <span className="text-xs font-semibold text-slate-500 mr-1">Status:</span>
+          <button
+            type="button"
+            onClick={() => setFilterStatus('')}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+              filterStatus === '' 
+                ? 'bg-slate-800 text-white shadow-sm' 
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            Semua ({baseFilteredData.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterStatus('Menunggu Persetujuan')}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
+              filterStatus === 'Menunggu Persetujuan' 
+                ? 'bg-amber-600 text-white shadow-sm' 
+                : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            Menunggu Persetujuan
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+              filterStatus === 'Menunggu Persetujuan' ? 'bg-amber-800 text-white' : 'bg-amber-200/80 text-amber-800'
+            }`}>
+              {countMenunggu}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterStatus('Disetujui')}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
+              filterStatus === 'Disetujui' 
+                ? 'bg-emerald-600 text-white shadow-sm' 
+                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Disetujui
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+              filterStatus === 'Disetujui' ? 'bg-emerald-800 text-white' : 'bg-emerald-200/80 text-emerald-800'
+            }`}>
+              {countDisetujui}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterStatus('Ditolak')}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
+              filterStatus === 'Ditolak' 
+                ? 'bg-red-600 text-white shadow-sm' 
+                : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+            Ditolak
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+              filterStatus === 'Ditolak' ? 'bg-red-800 text-white' : 'bg-red-200/80 text-red-800'
+            }`}>
+              {countDitolak}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -424,7 +513,11 @@ export default function PengajuanLembur() {
               {loading ? (
                 <TableRow><TableCell colSpan={10} className="text-center py-8 text-slate-500">Memuat data...</TableCell></TableRow>
               ) : filteredData.length === 0 ? (
-                <TableRow><TableCell colSpan={10} className="text-center py-8 text-slate-500">Belum ada pengajuan.</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center py-8 text-slate-500">
+                    {filterStatus ? `Belum ada pengajuan lembur dengan status "${filterStatus}".` : 'Belum ada pengajuan.'}
+                  </TableCell>
+                </TableRow>
               ) : (
                 filteredData.map(item => (
                   <TableRow key={item.id}>
