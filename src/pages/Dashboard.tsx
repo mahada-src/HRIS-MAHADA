@@ -182,7 +182,12 @@ export default function Dashboard() {
     })).filter(item => item.total > 0);
     setAttendanceData(chartData);
 
-    allPending.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    allPending.sort((a, b) => {
+      const dateA = new Date(a.requestDate || a.date || a.start_date || a.created_at || 0).getTime();
+      const dateB = new Date(b.requestDate || b.date || b.start_date || b.created_at || 0).getTime();
+      if (dateB !== dateA) return dateB - dateA;
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    });
     const pendingCount = allPending.length;
 
     const invData = invResult.data || [];
@@ -236,7 +241,7 @@ export default function Dashboard() {
       { title: 'Investasi', value: formatRupiah(totalInvestasi), subtitle: role === 'Super Admin' && departmentId === 'all' ? 'Total Seluruh' : 'Total Departemen', subtitleColor: 'text-blue-600' },
     ]);
 
-    setRecentRequests(allPending.slice(0, 10));
+    setRecentRequests(allPending.slice(0, 20));
 
     // Evaluasi Probation & Internship
     let evalQuery = supabase.from('employees').select('id, full_name, employee_code, tgl_probation, employment_status, departments(name), positions(title)').in('employment_status', ['Probation', 'Internship', 'Kontrak']);
